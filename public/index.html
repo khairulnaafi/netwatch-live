@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NetWatch Live — Network Monitoring Dashboard</title>
+  <meta name="description" content="Dashboard monitoring jaringan real-time: status perangkat, throughput, latency, Wi-Fi sekitar, klien, dan alert Telegram." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230b1220'/%3E%3Cpath d='M7 20c5-9 13-9 18 0' fill='none' stroke='%2322d3ee' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='23' r='2.4' fill='%2334d399'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M5.5 12a10.5 10.5 0 0 1 13 0"/><path d="M8.6 15.4a6 6 0 0 1 6.8 0"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l2.5-7 4 14 2.5-7h5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10.5 20a2 2 0 0 0 3 0"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v15"/><path d="m6 13 6 6 6-6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 20V5"/><path d="m6 11 6-6 6 6"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></symbol>
+    <symbol id="i-router" viewBox="0 0 24 24"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 16.5h.01M12 2v4M8.5 4.5a5 5 0 0 1 7 0M5.5 2.5a9 9 0 0 1 13 0"/></symbol>
+    <symbol id="i-switch" viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="10" rx="2"/><path d="M6 11v2M9 11v2M12 11v2M15 11v2M18 11v2"/></symbol>
+    <symbol id="i-ap" viewBox="0 0 24 24"><path d="M12 21v-7"/><circle cx="12" cy="13" r="1.4" fill="currentColor" stroke="none"/><path d="M8.8 9.8a4.5 4.5 0 0 1 6.4 0M5.8 6.8a9 9 0 0 1 12.4 0"/><path d="M8 21h8"/></symbol>
+    <symbol id="i-printer" viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 14h10v7H7z"/></symbol>
+    <symbol id="i-cctv" viewBox="0 0 24 24"><path d="M3 7.5 17 4l2 5.5L5 13z"/><path d="M5 13v3l-2 5h6l1.5-4.5"/><path d="m15 10 4 1.5"/><circle cx="19" cy="12" r="1.4"/></symbol>
+    <symbol id="i-voip" viewBox="0 0 24 24"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2.5 2.5 0 0 1-2.7 2.5C10.8 19.4 4.6 13.2 4 6.2A2.5 2.5 0 0 1 6.5 3.5Z"/></symbol>
+    <symbol id="i-iot" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="M8 8h8M8 11h5"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.4-9 6 6 0 0 1 11.5 1.6A3.8 3.8 0 0 1 17.5 18Z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19Z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.2a3.5 3.5 0 0 1 0 6.6M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v6c0 4.5 3.2 7.6 7.5 9 4.3-1.4 7.5-4.5 7.5-9V6Z"/><path d="m8.8 12 2.2 2.2 4.2-4.6"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 24 24"><path d="M4 20v-4M9 20v-7M14 20V9M19 20V4"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m21 3-9.5 18-2.2-7.3L3 11.5Z"/><path d="M21 3 9.3 13.7"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20.5 11.5a8 8 0 0 1-11.7 7.2L4 20l1.3-4.6a8 8 0 1 1 15.2-3.9Z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3v-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6V3h4v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><path d="m12 12 6-6"/></symbol>
+  </svg>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><span></span></div>
+        <div class="brand-text">
+          <strong>NETWATCH</strong>
+          <small>LIVE OPS</small>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <p class="nav-label">MONITORING</p>
+        <button class="nav-item active" data-page="overview">
+          <svg><use href="#i-grid"/></svg><span>Ringkasan</span>
+        </button>
+        <button class="nav-item" data-page="wifi">
+          <svg><use href="#i-wifi"/></svg><span>Wi-Fi &amp; Klien</span>
+          <span class="nav-count" id="navClientCount">0</span>
+        </button>
+        <button class="nav-item" data-page="activity">
+          <svg><use href="#i-activity"/></svg><span>Aktivitas DNS</span>
+        </button>
+        <button class="nav-item" data-page="alerts">
+          <svg><use href="#i-bell"/></svg><span>Notifikasi</span>
+          <span class="nav-dot hidden" id="navAlertDot"></span>
+        </button>
+      </nav>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-head">
+          <span class="pulse-dot" id="sideModeDot"></span>
+          <span id="sideModeLabel">Mode Demo</span>
+        </div>
+        <p id="sideModeDesc">Data simulasi realistis untuk presentasi.</p>
+        <div class="sidebar-meter"><span id="sideMeter"></span></div>
+        <small id="sideSystem">memuat sistem…</small>
+      </div>
+
+      <div class="sidebar-foot">
+        <span>NETWATCH v1.0</span>
+        <span id="footUptime">—</span>
+      </div>
+    </aside>
+
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Buka menu">
+          <svg><use href="#i-menu"/></svg>
+        </button>
+        <div class="page-heading">
+          <h1 id="pageTitle">Ringkasan Jaringan</h1>
+          <p id="pageSub">Pantauan langsung perangkat, trafik, dan kualitas koneksi.</p>
+        </div>
+
+        <div class="top-actions">
+          <div class="clock-pill" title="Waktu server">
+            <span class="live-dot"></span>
+            <span id="clock">--:--:--</span>
+          </div>
+
+          <div class="mode-switch" role="group" aria-label="Mode data">
+            <button data-mode="demo" class="active">Demo</button>
+            <button data-mode="live">Live</button>
+          </div>
+
+          <button class="btn btn-ghost" id="incidentBtn" title="Buat perangkat offline selama 14 detik">
+            <svg><use href="#i-zap"/></svg>
+            <span>Simulasi Gangguan</span>
+          </button>
+
+          <div class="avatar" title="Operator NOC">NOC</div>
+        </div>
+      </header>
+
+      <main class="content">
+        <!-- ============================== OVERVIEW ============================== -->
+        <section class="page active" id="page-overview">
+          <div class="banner hidden" id="alertBanner">
+            <div class="banner-icon"><svg><use href="#i-alert"/></svg></div>
+            <div class="banner-text">
+              <strong id="bannerTitle">Perangkat offline</strong>
+              <span id="bannerMessage">Ada perangkat yang tidak merespons.</span>
+            </div>
+            <button class="btn btn-sm btn-danger" id="bannerAction">Lihat detail</button>
+          </div>
+
+          <div class="kpi-grid">
+            <article class="card kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon icon-cyan"><svg><use href="#i-server"/></svg></span>
+                <span class="trend-chip" id="kpiOnlineChip">—</span>
+              </div>
+              <p class="kpi-label">Perangkat Online</p>
+              <div class="kpi-value"><span id="kpiOnline">—</span><small id="kpiTotal">/ —</small></div>
+              <div class="kpi-foot">
+                <span id="kpiOffline">— offline</span>
+                <canvas class="spark" id="sparkOnline" height="30"></canvas>
+              </div>
+            </article>
+
+            <article class="card kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon icon-violet"><svg><use href="#i-activity"/></svg></span>
+                <span class="trend-chip" id="kpiThroughputChip">live</span>
+              </div>
+              <p class="kpi-label">Throughput</p>
+              <div class="kpi-value"><span id="kpiThroughput">—</span><small>Mbps</small></div>
+              <div class="kpi-foot">
+                <span class="kpi-split"><svg class="ic-down"><use href="#i-down"/></svg><b id="kpiDown">—</b><svg class="ic-up"><use href="#i-up"/></svg><b id="kpiUp">—</b></span>
+                <canvas class="spark" id="sparkTraffic" height="30"></canvas>
+              </div>
+            </article>
+
+            <article class="card kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon icon-amber"><svg><use href="#i-clock"/></svg></span>
+                <span class="trend-chip" id="kpiLatencyChip">normal</span>
+              </div>
+              <p class="kpi-label">Latency Rata-rata</p>
+              <div class="kpi-value"><span id="kpiLatency">—</span><small>ms</small></div>
+              <div class="kpi-foot">
+                <span id="kpiLoss">loss —</span>
+                <canvas class="spark" id="sparkLatency" height="30"></canvas>
+              </div>
+            </article>
+
+            <article class="card kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon icon-emerald"><svg><use href="#i-shield"/></svg></span>
+                <span class="trend-chip" id="kpiAvailChip">sesi ini</span>
+              </div>
+              <p class="kpi-label">Availability</p>
+              <div class="kpi-value"><span id="kpiAvailability">—</span><small>%</small></div>
+              <div class="kpi-foot kpi-foot-col">
+                <div class="mini-bar"><span id="kpiAvailBar" style="width:0%"></span></div>
+                <span id="kpiAvailSub">—</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="dash-grid">
+            <article class="card span-2">
+              <div class="card-head">
+                <div>
+                  <h2>Throughput Jaringan</h2>
+                  <p>Download &amp; upload real-time · <span id="trafficWindow">60 sampel terakhir</span></p>
+                </div>
+                <div class="chart-legend">
+                  <span><i class="dot cyan"></i>Download <b id="legendDown">—</b></span>
+                  <span><i class="dot violet"></i>Upload <b id="legendUp">—</b></span>
+                </div>
+              </div>
+              <div class="chart-box tall"><canvas id="trafficChart"></canvas><div class="chart-empty hidden" id="trafficEmpty">Menunggu data trafik…</div></div>
+            </article>
+
+            <article class="card wifi-card">
+              <div class="card-head">
+                <div>
+                  <h2>Wi-Fi Terhubung</h2>
+                  <p id="wifiSourceLabel">Sumber data</p>
+                </div>
+                <button class="icon-btn sm" data-goto="wifi" title="Buka halaman Wi-Fi"><svg><use href="#i-chevron"/></svg></button>
+              </div>
+              <div class="wifi-hero">
+                <div class="signal-ring" id="signalRing" style="--value:0">
+                  <div class="signal-ring-inner">
+                    <strong id="wifiSignal">—</strong><small>%</small>
+                  </div>
+                </div>
+                <div class="wifi-identity">
+                  <div class="wifi-name-row">
+                    <span class="status-dot" id="wifiDot"></span>
+                    <strong id="wifiSsid">Belum terhubung</strong>
+                  </div>
+                  <span class="wifi-meta" id="wifiMeta">—</span>
+                  <span class="badge" id="wifiSecurity">—</span>
+                </div>
+              </div>
+              <div class="wifi-stats">
+                <div><span>Stasiun AP</span><strong id="wifiStations">—</strong></div>
+                <div><span>Klien terlihat</span><strong id="wifiClients">—</strong></div>
+                <div><span>Band / Channel</span><strong id="wifiChannel">—</strong></div>
+              </div>
+              <div class="nearby-mini" id="nearbyMini"></div>
+              <button class="btn btn-subtle btn-block" data-goto="wifi">Lihat Wi-Fi sekitar <svg><use href="#i-chevron"/></svg></button>
+            </article>
+
+            <article class="card span-2">
+              <div class="card-head">
+                <div>
+                  <h2>Latency per Perangkat</h2>
+                  <p>Garis putus = perangkat tidak merespons</p>
+                </div>
+                <div class="chart-legend wrap" id="latencyLegend"></div>
+              </div>
+              <div class="chart-box tall"><canvas id="latencyChart"></canvas><div class="chart-empty hidden" id="latencyEmpty">Menunggu data latency…</div></div>
+            </article>
+
+            <article class="card events-card">
+              <div class="card-head">
+                <div>
+                  <h2>Event Terbaru</h2>
+                  <p>Perubahan status &amp; peringatan</p>
+                </div>
+                <span class="badge badge-soft" id="eventCount">0</span>
+              </div>
+              <div class="event-list" id="eventList">
+                <div class="empty-state small">Belum ada event.</div>
+              </div>
+              <button class="btn btn-subtle btn-block" data-goto="alerts">Buka riwayat notifikasi <svg><use href="#i-chevron"/></svg></button>
+            </article>
+
+            <article class="card span-3 devices-card">
+              <div class="card-head devices-head">
+                <div>
+                  <h2>Perangkat Jaringan</h2>
+                  <p><span id="deviceSummary">—</span> · klik baris untuk melihat detail</p>
+                </div>
+                <div class="table-tools">
+                  <div class="search-box">
+                    <svg><use href="#i-search"/></svg>
+                    <input id="deviceSearch" type="search" placeholder="Cari nama, IP, lokasi…" autocomplete="off" />
+                  </div>
+                  <div class="filter-chips" id="deviceFilters">
+                    <button class="chip active" data-filter="all">Semua</button>
+                    <button class="chip" data-filter="up">Online</button>
+                    <button class="chip" data-filter="warning">Warning</button>
+                    <button class="chip" data-filter="down">Offline</button>
+                  </div>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table devices-table">
+                  <thead>
+                    <tr>
+                      <th>Perangkat</th>
+                      <th>Status</th>
+                      <th>Latency</th>
+                      <th>Loss</th>
+                      <th>Traffic</th>
+                      <th>Availability</th>
+                      <th>Tren 2 mnt</th>
+                      <th class="right">Cek terakhir</th>
+                    </tr>
+                  </thead>
+                  <tbody id="deviceRows"></tbody>
+                </table>
+                <div class="empty-state hidden" id="deviceEmpty">Tidak ada perangkat yang cocok dengan pencarian.</div>
+              </div>
+            </article>
+          </div>
+
+          <p class="page-note">Data demo ditandai dengan mode <b>Demo</b>. Beralih ke <b>Live</b> untuk memantau gateway dan internet dari komputer ini secara nyata.</p>
+        </section>
+
+        <!-- ============================== WIFI ============================== -->
+        <section class="page" id="page-wifi">
+          <div class="page-actions">
+            <div class="inline-note">
+              <svg><use href="#i-shield"/></svg>
+              <span>Gunakan hanya pada jaringan yang Anda miliki atau yang Anda punya izin untuk memantaunya.</span>
+            </div>
+            <div class="actions-right">
+              <button class="btn btn-ghost" id="scanWifiBtn"><svg><use href="#i-refresh"/></svg><span>Scan Wi-Fi</span></button>
+              <button class="btn btn-primary" id="scanClientsBtn"><svg><use href="#i-radar"/></svg><span>Scan Klien</span></button>
+            </div>
+          </div>
+
+          <div class="wifi-layout">
+            <article class="card connection-card">
+              <div class="card-head">
+                <div>
+                  <h2>Koneksi Aktif</h2>
+                  <p id="connSub">Detail adaptor Wi-Fi</p>
+                </div>
+                <span class="badge" id="connBadge">—</span>
+              </div>
+              <div class="conn-hero">
+                <div class="signal-ring lg" id="connRing" style="--value:0">
+                  <div class="signal-ring-inner"><strong id="connSignal">—</strong><small>%</small></div>
+                </div>
+                <div>
+                  <h3 id="connSsid">—</h3>
+                  <p class="mono" id="connBssid">—</p>
+                  <div class="badge-row">
+                    <span class="badge" id="connSecurity">—</span>
+                    <span class="badge badge-soft" id="connBand">—</span>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-grid">
+                <div><span>Channel</span><strong id="connChannel">—</strong></div>
+                <div><span>Radio</span><strong id="connRadio">—</strong></div>
+                <div><span>RX / TX rate</span><strong id="connRate">—</strong></div>
+                <div><span>RSSI</span><strong id="connRssi">—</strong></div>
+                <div><span>Stasiun di AP</span><strong id="connStations">—</strong></div>
+                <div><span>Utilisasi channel</span><strong id="connUtil">—</strong></div>
+              </div>
+              <div class="security-hint" id="securityHint"></div>
+            </article>
+
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Kepadatan Channel 2.4 GHz</h2>
+                  <p>Jumlah jaringan yang terdeteksi per channel</p>
+                </div>
+              </div>
+              <div class="channel-chart" id="channelChart"></div>
+              <div class="channel-legend"><span><i class="dot cyan"></i>Jaringan</span><span><i class="dot amber"></i>Channel koneksi aktif</span></div>
+              <div class="channel-insight" id="channelInsight">—</div>
+            </article>
+
+            <article class="card span-2">
+              <div class="card-head">
+                <div>
+                  <h2>Wi-Fi di Sekitar</h2>
+                  <p id="nearbySub">—</p>
+                </div>
+                <span class="scan-state" id="wifiScanState"></span>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>SSID</th><th>Sinyal</th><th>Band / Channel</th><th>Keamanan</th><th>Stasiun</th><th>Utilisasi</th><th>BSSID</th></tr>
+                  </thead>
+                  <tbody id="nearbyRows"></tbody>
+                </table>
+                <div class="empty-state hidden" id="nearbyEmpty">Belum ada hasil scan. Klik “Scan Wi-Fi”.</div>
+              </div>
+            </article>
+
+            <article class="card span-2">
+              <div class="card-head">
+                <div>
+                  <h2>Klien di Jaringan</h2>
+                  <p id="clientsSub">—</p>
+                </div>
+                <span class="scan-state" id="clientScanState"></span>
+              </div>
+              <div class="client-summary" id="clientSummary"></div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Perangkat</th><th>Alamat IP</th><th>MAC</th><th>Vendor</th><th>Status</th><th class="right">Terakhir terlihat</th></tr>
+                  </thead>
+                  <tbody id="clientRows"></tbody>
+                </table>
+                <div class="empty-state hidden" id="clientEmpty">Belum ada klien terdeteksi. Coba “Scan Klien”.</div>
+              </div>
+              <p class="card-note">Scan klien memakai ARP + ping sweep pada subnet lokal. Jaringan dengan <b>client isolation</b> atau izin terbatas bisa menampilkan lebih sedikit perangkat.</p>
+            </article>
+          </div>
+        </section>
+
+        <!-- ============================== ACTIVITY ============================== -->
+        <section class="page" id="page-activity">
+          <div class="activity-hero">
+            <div class="activity-hero-copy">
+              <span class="eyebrow">DNS OBSERVER</span>
+              <h2>Aktivitas domain di jaringan Anda</h2>
+              <p>DNS logger mencatat <b>nama domain</b> yang diminta perangkat — bukan isi halaman atau data HTTPS. Aktifkan hanya di jaringan sendiri dan beri tahu penggunanya.</p>
+              <div class="dns-status-row">
+                <span class="status-pill" id="dnsStatus"><span class="pulse-dot"></span> Memuat…</span>
+                <span class="mono" id="dnsEndpoint">—</span>
+              </div>
+            </div>
+            <div class="activity-hero-actions">
+              <button class="btn btn-primary" id="dnsToggleBtn">Aktifkan DNS Logger</button>
+              <p>Port <b id="dnsPort">5354</b> · upstream <b id="dnsUpstream">8.8.8.8</b></p>
+            </div>
+          </div>
+
+          <div class="dns-help card">
+            <div class="dns-help-head">
+              <span class="kpi-icon icon-cyan"><svg><use href="#i-globe"/></svg></span>
+              <div>
+                <h3>Cara menangkap aktivitas (opsional)</h3>
+                <p>Butuh satu langkah di router atau perangkat yang Anda kelola.</p>
+              </div>
+            </div>
+            <ol class="steps">
+              <li><span>1</span><div><b>Aktifkan DNS logger</b><p>Server akan mendengarkan permintaan DNS di port <span class="mono" id="dnsPortInline">5354</span>.</p></div></li>
+              <li><span>2</span><div><b>Arahkan DNS perangkat ke IP komputer ini</b><p>Di router: set DNS server ke <span class="mono" id="dnsIpInline">IP-LAN</span>. Banyak router hanya menerima port 53 — ubah port di <span class="mono">config.json</span> dan jalankan sebagai admin bila perlu. Private DNS Android tidak mendukung port kustom.</p></div></li>
+              <li><span>3</span><div><b>Lihat domain muncul</b><p>Feed di bawah terisi otomatis. Untuk HTTPS, hanya domain yang terlihat — path dan konten tetap terenkripsi.</p></div></li>
+            </ol>
+            <p class="card-note">Catatan: fitur ini hanya mencatat domain dari perangkat yang memakai DNS logger ini, bukan isi HTTPS, dan tidak bisa membaca trafik Wi-Fi orang lain dari luar jaringan. Port 5354 dipakai karena port 5353 sudah dipakai mDNS Windows. Uji dengan <span class="mono">node tools/dns-query.js example.com</span>.</p>
+          </div>
+
+          <div class="activity-stats">
+            <article class="card stat-card"><span>Total query</span><strong id="actTotal">0</strong><small>permintaan DNS tercatat</small></article>
+            <article class="card stat-card"><span>Domain unik</span><strong id="actDomains">0</strong><small>nama domain berbeda</small></article>
+            <article class="card stat-card"><span>Klien aktif</span><strong id="actClients">0</strong><small>alamat IP sumber</small></article>
+          </div>
+
+          <div class="activity-grid">
+            <article class="card">
+              <div class="card-head"><div><h2>Domain Teratas</h2><p>Berdasarkan jumlah query</p></div></div>
+              <div class="rank-list" id="topDomains"><div class="empty-state small">Belum ada data.</div></div>
+            </article>
+            <article class="card">
+              <div class="card-head"><div><h2>Klien Paling Aktif</h2><p>Sumber query DNS</p></div></div>
+              <div class="rank-list" id="topClients"><div class="empty-state small">Belum ada data.</div></div>
+            </article>
+            <article class="card span-2">
+              <div class="card-head">
+                <div><h2>Live Feed</h2><p id="feedSub">Domain yang baru diakses</p></div>
+                <span class="badge badge-soft" id="feedBadge">0 entri</span>
+              </div>
+              <div class="table-wrap feed-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Waktu</th><th>Klien</th><th>Domain</th><th>Kategori</th><th>Tipe</th></tr></thead>
+                  <tbody id="activityRows"></tbody>
+                </table>
+                <div class="empty-state hidden" id="activityEmpty">Belum ada aktivitas DNS. Aktifkan logger lalu arahkan DNS perangkat ke komputer ini.</div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- ============================== ALERTS ============================== -->
+        <section class="page" id="page-alerts">
+          <div class="alert-intro">
+            <div>
+              <span class="eyebrow">NOTIFIKASI</span>
+              <h2>Kirim alert ke Telegram / WhatsApp</h2>
+              <p>Notifikasi dikirim saat perangkat offline, pulih, atau kualitas koneksi melewati ambang batas. Kredensial disimpan lokal di <span class="mono">config.json</span>.</p>
+            </div>
+            <span class="status-pill" id="notifSummary">Memuat…</span>
+          </div>
+
+          <div class="channel-grid">
+            <article class="card channel-card">
+              <div class="channel-head">
+                <span class="channel-icon telegram"><svg><use href="#i-send"/></svg></span>
+                <div><h3>Telegram Bot</h3><p>Bot API resmi, gratis, dan cepat.</p></div>
+                <span class="badge" id="tgStatus">Nonaktif</span>
+              </div>
+              <form id="tgForm" class="form-grid">
+                <label class="field"><span>Bot token</span><input type="password" name="botToken" id="tgToken" placeholder="123456:ABC-DEF…" autocomplete="off" /></label>
+                <label class="field"><span>Chat ID</span><input type="text" name="chatId" id="tgChat" placeholder="123456789" autocomplete="off" /></label>
+                <label class="switch-row"><input type="checkbox" id="tgEnabled" /><span class="switch"></span><span>Aktifkan notifikasi Telegram</span></label>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+                  <button type="button" class="btn btn-ghost btn-sm" id="tgTest">Kirim tes</button>
+                  <span class="form-hint" id="tgHint"></span>
+                </div>
+              </form>
+              <p class="card-note">Buat bot via <b>@BotFather</b>, lalu ambil chat ID dari <span class="mono">getUpdates</span>. Token yang tersimpan tidak dikirim ulang ke browser.</p>
+            </article>
+
+            <article class="card channel-card">
+              <div class="channel-head">
+                <span class="channel-icon whatsapp"><svg><use href="#i-chat"/></svg></span>
+                <div><h3>WhatsApp</h3><p>Lewat webhook / gateway penyedia.</p></div>
+                <span class="badge" id="waStatus">Nonaktif</span>
+              </div>
+              <form id="waForm" class="form-grid">
+                <label class="field"><span>Provider</span>
+                  <select id="waProvider">
+                    <option value="generic">Generic webhook (JSON)</option>
+                    <option value="fonnte">Fonnte</option>
+                    <option value="wablas">WABLAS</option>
+                    <option value="meta">Meta WhatsApp Cloud API</option>
+                  </select>
+                </label>
+                <label class="field"><span>Endpoint URL (opsional)</span><input type="text" id="waUrl" placeholder="https://…" autocomplete="off" /></label>
+                <label class="field"><span>Token / API key</span><input type="password" id="waToken" placeholder="token" autocomplete="off" /></label>
+                <label class="field"><span>Nomor tujuan / target</span><input type="text" id="waTarget" placeholder="62812…" autocomplete="off" /></label>
+                <label class="field hidden" id="waPhoneField"><span>Phone number ID (Meta)</span><input type="text" id="waPhoneId" placeholder="1234567890" autocomplete="off" /></label>
+                <label class="switch-row"><input type="checkbox" id="waEnabled" /><span class="switch"></span><span>Aktifkan notifikasi WhatsApp</span></label>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+                  <button type="button" class="btn btn-ghost btn-sm" id="waTest">Kirim tes</button>
+                  <span class="form-hint" id="waHint"></span>
+                </div>
+              </form>
+              <p class="card-note">WhatsApp tidak punya API bot gratis seperti Telegram. Gunakan penyedia seperti Fonnte/WABLAS, atau Meta Cloud API bila sudah terdaftar.</p>
+            </article>
+          </div>
+
+          <div class="alert-layout">
+            <article class="card">
+              <div class="card-head"><div><h2>Aturan Alert</h2><p>Ambang batas dan jeda pengiriman</p></div></div>
+              <form id="ruleForm" class="form-grid rule-grid">
+                <label class="field"><span>Latency warning (ms)</span><input type="number" id="ruleLatency" min="10" max="5000" step="1" /></label>
+                <label class="field"><span>Packet loss warning (%)</span><input type="number" id="ruleLoss" min="0" max="100" step="0.5" /></label>
+                <label class="field"><span>Cooldown per perangkat (detik)</span><input type="number" id="ruleCooldown" min="10" max="3600" step="10" /></label>
+                <label class="switch-row"><input type="checkbox" id="ruleRecovery" /><span class="switch"></span><span>Kirim notifikasi saat perangkat pulih</span></label>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary btn-sm">Simpan aturan</button>
+                  <span class="form-hint" id="ruleHint"></span>
+                </div>
+              </form>
+            </article>
+
+            <article class="card">
+              <div class="card-head"><div><h2>Riwayat Notifikasi</h2><p>Percobaan pengiriman terakhir</p></div><span class="badge badge-soft" id="alertLogCount">0</span></div>
+              <div class="table-wrap log-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Waktu</th><th>Channel</th><th>Judul</th><th>Status</th></tr></thead>
+                  <tbody id="alertLogRows"></tbody>
+                </table>
+                <div class="empty-state hidden" id="alertLogEmpty">Belum ada notifikasi terkirim.</div>
+              </div>
+            </article>
+          </div>
+
+          <p class="page-note">Tip demo: aktifkan Telegram, lalu tekan <b>Simulasi Gangguan</b> di halaman Ringkasan. Alert offline dan recovery akan dikirim berurutan.</p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Device drawer -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="deviceDrawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div>
+        <span class="eyebrow">DETAIL PERANGKAT</span>
+        <h2 id="drawerName">—</h2>
+        <p id="drawerLocation">—</p>
+      </div>
+      <button class="icon-btn" id="drawerClose" aria-label="Tutup"><svg><use href="#i-x"/></svg></button>
+    </div>
+    <div class="drawer-status">
+      <span class="status-pill" id="drawerStatus">—</span>
+      <span class="mono" id="drawerHost">—</span>
+    </div>
+    <div class="drawer-metrics">
+      <div><span>Latency</span><strong id="drawerLatency">—</strong></div>
+      <div><span>Packet loss</span><strong id="drawerLoss">—</strong></div>
+      <div><span>Availability</span><strong id="drawerAvailability">—</strong></div>
+      <div><span>Throughput</span><strong id="drawerTraffic">—</strong></div>
+    </div>
+    <div class="drawer-chart-head"><h3>Latency 2 menit</h3><span id="drawerUpdated">—</span></div>
+    <div class="chart-box drawer-chart"><canvas id="drawerChart"></canvas></div>
+    <div class="drawer-info">
+      <div><span>Tipe</span><strong id="drawerType">—</strong></div>
+      <div><span>Host</span><strong id="drawerResolved">—</strong></div>
+      <div><span>Status terakhir</span><strong id="drawerCheck">—</strong></div>
+      <div><span>Catatan</span><strong id="drawerNote">—</strong></div>
+    </div>
+  </aside>
+
+  <div class="toast-stack" id="toasts"></div>
+
+  <script src="/js/charts.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

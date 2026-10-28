@@ -1,0 +1,14 @@
+{
+  "name": "netwatch-live",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dashboard monitoring jaringan real-time: status perangkat, throughput, latency, Wi-Fi sekitar, klien, dan alert Telegram.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
