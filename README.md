@@ -129,6 +129,28 @@ Setelah link dibuka, server menyimpan sesi di cookie `HttpOnly` dan mengalihkan 
 - Jangan bagikan link/token ke publik. Siapa pun yang punya link bisa melihat dashboard.
 - Untuk alamat tetap, gunakan **named tunnel** dengan domain sendiri (butuh akun Cloudflare).
 
+## Wi-Fi di sekitar perangkat teman (multi-lokasi)
+
+Browser **tidak bisa** memindai daftar Wi-Fi di sekitar pengunjung — tidak ada API-nya, dan ini batasan keamanan browser. Karena itu NetWatch memakai **agent** yang dijalankan di perangkat teman.
+
+| Perangkat | Agent | Kebutuhan |
+|---|---|---|
+| Windows | `agent/agent.bat` | Tidak perlu install apa pun (memakai PowerShell bawaan) |
+| Android | `agent/termux.sh` | Termux + Termux:API dari F-Droid, izin lokasi, GPS menyala |
+| Linux | `agent/agent.sh` | `nmcli` (NetworkManager) |
+| macOS | `agent/agent.sh` | `airport` (bisa tidak tersedia di Sonoma ke atas) |
+
+Langkah singkat:
+
+1. Ambil **kunci agent** dari `config.json` → `agent.key` (atau env `NETWATCH_AGENT_KEY`).
+2. Kirim folder `agent/`, alamat tunnel, dan kunci agent ke teman Anda.
+3. Teman menjalankan agent dan mengisi nama lokasi (contoh `Laptop Budi`).
+4. Buka dashboard → **Wi-Fi & Klien** → pilih lokasi di dropdown **Lokasi dipantau**.
+
+Panduan lengkap: [`agent/README.md`](agent/README.md)
+
+Endpoint yang dipakai agent: `POST /api/agent/ingest` dengan header `x-agent-key`. Kunci ini hanya bisa mengirim data — tidak bisa membuka dashboard.
+
 ## Deploy ke Vercel (demo showcase)
 
 Repo ini sudah dilengkapi adapter serverless di `api/index.js` dan `vercel.json`, sehingga bisa di-deploy ke Vercel untuk **demo publik**.
@@ -299,6 +321,7 @@ Arahkan DNS perangkat (atau DHCP router) ke **IP LAN komputer ini**, port **5354
 | `NETWATCH_DEMO=1` / `0` | Paksa mode demo/live |
 | `NETWATCH_USER` | Username Basic Auth (wajib bersama `NETWATCH_PASS`) |
 | `NETWATCH_PASS` | Password Basic Auth |
+| `NETWATCH_AGENT_KEY` | Kunci untuk agent multi-lokasi (menimpa `agent.key`) |
 
 Jika `NETWATCH_USER` dan `NETWATCH_PASS` diisi, seluruh dashboard dan API dilindungi password. Login bisa lewat prompt browser (Basic Auth) atau link `?k=<token>` yang memasang cookie sesi.
 
@@ -345,6 +368,12 @@ netwatch-live/
 ├─ start.bat              launcher Windows (lokal)
 ├─ start-live.bat         launcher live + Cloudflare Tunnel
 ├─ live-auth.cmd          username/password live (tidak di-commit)
+├─ agent/
+│  ├─ agent.bat           agent Windows (paling mudah)
+│  ├─ agent.ps1           pemindai Wi-Fi Windows
+│  ├─ agent.sh            agent Linux/macOS
+│  ├─ termux.sh           agent Android (Termux)
+│  └─ README.md           panduan agent
 ├─ tools/
 │  └─ dns-query.js        klien uji DNS logger
 ├─ lib/

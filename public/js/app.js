@@ -35,6 +35,7 @@
     sseRetry: null,
     pollTimer: null,
     busy: false,
+    locationId: 'local',
   };
 
 
@@ -485,9 +486,76 @@
   /* WiFi page                                                           */
   /* ------------------------------------------------------------------ */
 
+  function remoteLocations(snap) {
+    return Array.isArray(snap.locations) ? snap.locations : [];
+  }
+
+  /**
+   * Pilih sumber data halaman Wi-Fi: "local" (komputer ini) atau agent
+   * yang berjalan di perangkat teman.
+   */
+  function wifiView(snap, id) {
+    const loc = id && id !== 'local' ? remoteLocations(snap).find((l) => l.id === id) : null;
+    if (!loc) return { remote: null, wifi: snap.wifi, clients: snap.clients };
+    const wifiData = loc.wifi || {};
+    return {
+      remote: loc,
+      wifi: {
+        current: wifiData.current || null,
+        nearby: Array.isArray(wifiData.nearby) ? wifiData.nearby : [],
+        scannedAt: loc.updatedAt,
+        scanning: false,
+        source: loc.source || 'agent',
+      },
+      clients: {
+        list: Array.isArray(loc.clients) ? loc.clients : [],
+        scannedAt: loc.updatedAt,
+        scanning: false,
+        subnet: (loc.network && loc.network.subnet) || null,
+        localIp: (loc.network && loc.network.localIp) || null,
+        gateway: (loc.network && loc.network.gateway) || null,
+        stations: wifiData.stations == null ? null : wifiData.stations,
+      },
+    };
+  }
+
+  function syncLocationSelect(snap) {
+    const select = $('#locationSelect');
+    if (!select) return;
+    const locations = remoteLocations(snap);
+    const ids = ['local', ...locations.map((l) => l.id)];
+    if (!ids.includes(state.locationId)) state.locationId = 'local';
+    const signature = locations.map((l) => `${l.id}:${l.online ? 1 : 0}`).join('|');
+    if (select.dataset.signature !== signature) {
+      select.dataset.signature = signature;
+      select.innerHTML = [
+        '<option value="local">Komputer ini</option>',
+        ...locations.map((l) => `<option value="${esc(l.id)}">${esc(l.name)}${l.online ? '' : ' (offline)'}</option>`),
+      ].join('');
+    }
+    select.value = state.locationId;
+  }
+
   function renderWifiPage() {
     const { snap } = state;
-    const current = snap.wifi.current;
+    syncLocationSelect(snap);
+    const view = wifiView(snap, state.locationId);
+    const wifi = view.wifi;
+    const clientsData = view.clients;
+    const remote = view.remote;
+
+    const note = $('#locationNote');
+    if (remote) {
+      note.className = 'location-note remote';
+      note.textContent = `Menampilkan Wi-Fi di sekitar ${remote.name} · data ${fmtAgo(remote.updatedAt)}${
+        remote.online ? '' : ' · agent sedang offline'
+      }`;
+    } else {
+      note.className = 'location-note';
+      note.textContent = 'Data Wi-Fi diambil dari adaptor komputer ini.';
+    }
+
+    const current = wifi.current;
     const connected = Boolean(current && current.ssid);
     const signal = connected ? Math.round(current.signal || 0) : 0;
     const ring = $('#connRing');
@@ -496,7 +564,11 @@
     $('#connSignal').textContent = connected ? signal : '—';
     $('#connSsid').textContent = connected ? current.ssid : 'Tidak terhubung';
     $('#connBssid').textContent = connected ? current.bssid || '—' : '—';
-    $('#connSub').textContent = connected ? 'Detail adaptor Wi-Fi aktif' : 'Tidak ada koneksi Wi-Fi aktif';
+    $('#connSub').textContent = connected
+      ? remote
+        ? `Koneksi Wi-Fi ${remote.name}`
+        : 'Detail adaptor Wi-Fi aktif'
+      : 'Tidak ada koneksi Wi-Fi aktif';
     const security = connected ? current.security || securityLabel(current.auth, current.cipher) : '—';
     const secBadge = $('#connSecurity');
     secBadge.textContent = security;
@@ -509,13 +581,15 @@
     $('#connRadio').textContent = connected ? current.radio || '—' : '—';
     $('#connRate').textContent = connected ? `${current.rxMbps || '—'} / ${current.txMbps || '—'} Mbps` : '—';
     $('#connRssi').textContent = connected && current.rssi != null ? `${current.rssi} dBm` : '—';
-    $('#connStations').textContent = snap.clients.stations != null ? `${snap.clients.stations} perangkat` : 'Tidak terpublikasi';
+    $('#connStations').textContent = clientsData.stations != null ? `${clientsData.stations} perangkat` : 'Tidak terpublikasi';
     $('#connUtil').textContent = current && current.utilization != null ? `${current.utilization}%` : 'Tidak terpublikasi';
 
     const hint = $('#securityHint');
     if (!connected) {
       hint.className = 'security-hint warn';
-      hint.textContent = 'Hubungkan adaptor Wi-Fi untuk melihat detail jaringan.';
+      hint.textContent = remote
+        ? `${remote.name} tidak melaporkan koneksi Wi-Fi aktif.`
+        : 'Hubungkan adaptor Wi-Fi untuk melihat detail jaringan.';
     } else if (security === 'Terbuka') {
       hint.className = 'security-hint bad';
       hint.textContent = 'Jaringan terbuka: trafik Wi-Fi tidak dienkripsi. Hindari login ke akun penting sebelum memakai VPN.';
@@ -527,13 +601,27 @@
       hint.textContent = `${security} terdeteksi. Enkripsi Wi-Fi aktif, tetapi keamanan tetap bergantung pada kata sandi dan konfigurasi router.`;
     }
 
-    $('#nearbySub').textContent = `${snap.wifi.nearby.length} jaringan · ${snap.wifi.scannedAt ? `scan ${fmtTime(snap.wifi.scannedAt)}` : 'belum scan'}`;
+    $('#nearbySub').textContent = `${wifi.nearby.length} jaringan · ${
+      wifi.scannedAt ? `scan ${fmtTime(wifi.scannedAt)}` : 'belum scan'
+    }`;
     const scanState = $('#wifiScanState');
-    scanState.textContent = snap.wifi.scanning ? 'memindai…' : snap.mode === 'demo' ? 'demo' : snap.wifi.source === 'windows' ? 'windows wlan' : '';
-    scanState.className = `scan-state ${snap.wifi.scanning ? 'busy' : ''}`;
-    setBusy($('#scanWifiBtn'), Boolean(snap.wifi.scanning), 'Memindai Wi-Fi…');
+    scanState.textContent = wifi.scanning
+      ? 'memindai…'
+      : remote
+        ? remote.online
+          ? 'agent'
+          : 'agent offline'
+        : snap.mode === 'demo'
+          ? 'demo'
+          : wifi.source === 'windows'
+            ? 'windows wlan'
+            : '';
+    scanState.className = `scan-state ${wifi.scanning ? 'busy' : ''}`;
+    setBusy($('#scanWifiBtn'), Boolean(wifi.scanning), 'Memindai Wi-Fi…');
+    $('#scanWifiBtn').disabled = Boolean(remote);
+    $('#scanWifiBtn').title = remote ? 'Scan hanya bisa dari komputer yang menjalankan server.' : '';
 
-    const nearby = snap.wifi.nearby || [];
+    const nearby = wifi.nearby || [];
     $('#nearbyRows').innerHTML = nearby
       .map((n) => {
         const sec = n.security || securityLabel(n.auth, n.cipher);
@@ -551,20 +639,33 @@
       })
       .join('');
     $('#nearbyEmpty').classList.toggle('hidden', nearby.length > 0);
+    $('#nearbyEmpty').textContent = remote
+      ? `Belum ada data Wi-Fi dari ${remote.name}. Pastikan agent masih berjalan.`
+      : 'Belum ada hasil scan. Klik “Scan Wi-Fi”.';
 
     renderChannelChart(nearby, connected ? current.channel : null);
 
-    const clients = snap.clients.list || [];
+    const clients = clientsData.list || [];
     const online = clients.filter((c) => c.status === 'online').length;
-    $('#clientsSub').textContent = `${clients.length} perangkat terlihat · subnet ${snap.clients.subnet || '—'}`;
-    $('#clientScanState').textContent = snap.clients.scanning ? 'memindai…' : snap.clients.scannedAt ? `scan ${fmtTime(snap.clients.scannedAt)}` : 'belum scan';
-    $('#clientScanState').className = `scan-state ${snap.clients.scanning ? 'busy' : ''}`;
-    setBusy($('#scanClientsBtn'), Boolean(snap.clients.scanning), 'Memindai klien…');
+    $('#clientsSub').textContent = `${clients.length} perangkat terlihat · subnet ${clientsData.subnet || '—'}`;
+    $('#clientScanState').textContent = clientsData.scanning
+      ? 'memindai…'
+      : remote
+        ? remote.online
+          ? 'agent'
+          : 'agent offline'
+        : clientsData.scannedAt
+          ? `scan ${fmtTime(clientsData.scannedAt)}`
+          : 'belum scan';
+    $('#clientScanState').className = `scan-state ${clientsData.scanning ? 'busy' : ''}`;
+    setBusy($('#scanClientsBtn'), Boolean(clientsData.scanning), 'Memindai klien…');
+    $('#scanClientsBtn').disabled = Boolean(remote);
+    $('#scanClientsBtn').title = remote ? 'Scan klien hanya bisa dari komputer yang menjalankan server.' : '';
     $('#clientSummary').innerHTML = `
       <span class="summary-chip"><span class="dot emerald"></span>Online <b>${online}</b></span>
       <span class="summary-chip"><span class="dot amber"></span>Idle <b>${clients.length - online}</b></span>
-      <span class="summary-chip">Gateway <b>${esc(snap.clients.gateway || '—')}</b></span>
-      <span class="summary-chip">IP lokal <b>${esc(snap.clients.localIp || '—')}</b></span>`;
+      <span class="summary-chip">Gateway <b>${esc(clientsData.gateway || '—')}</b></span>
+      <span class="summary-chip">IP lokal <b>${esc(clientsData.localIp || '—')}</b></span>`;
 
     $('#clientRows').innerHTML = clients
       .map((c) => `<tr>
@@ -573,7 +674,7 @@
         <td class="mono time-cell">${esc(c.mac)}</td>
         <td>${esc(c.vendor || '—')}</td>
         <td><span class="status-pill ${c.status === 'online' ? 'up' : 'unknown'}">${c.status === 'online' ? 'Online' : 'Idle'}</span></td>
-        <td class="right time-cell">${fmtAgo(c.lastSeen || snap.clients.scannedAt)}</td>
+        <td class="right time-cell">${fmtAgo(c.lastSeen || clientsData.scannedAt)}</td>
       </tr>`)
       .join('');
     $('#clientEmpty').classList.toggle('hidden', clients.length > 0);
@@ -924,6 +1025,11 @@
 
     $('#drawerClose').addEventListener('click', closeDrawer);
     $('#drawerBackdrop').addEventListener('click', closeDrawer);
+
+    $('#locationSelect').addEventListener('change', (e) => {
+      state.locationId = e.target.value || 'local';
+      renderWifiPage();
+    });
 
     $('#scanWifiBtn').addEventListener('click', async () => {
       setBusy($('#scanWifiBtn'), true, 'Memindai Wi-Fi…');

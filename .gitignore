@@ -10,3 +10,4 @@ Thumbs.db
 # Kredensial live (jangan pernah di-commit)
 live-auth.cmd
 live-auth.txt
+agent/agent-config.txt

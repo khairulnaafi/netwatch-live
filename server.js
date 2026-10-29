@@ -101,6 +101,7 @@ if (process.env.NETWATCH_DEMO === '1') config.demoMode = true;
 if (process.env.NETWATCH_DEMO === '0') config.demoMode = false;
 const monitor = new Monitor(config);
 const PORT = Number(process.env.PORT) || config.port;
+const AGENT_KEY = process.env.NETWATCH_AGENT_KEY || (config.agent && config.agent.key) || '';
 
 /* -------------------------------------------------------------------- */
 /* SSE                                                                   */
@@ -269,6 +270,32 @@ async function handleRequest(req, res) {
     'Content-Security-Policy',
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'"
   );
+
+  // Endpoint agent: dipakai perangkat lain (laptop/HP teman) untuk mengirim
+  // hasil scan Wi-Fi di sekitar mereka. Memakai kunci agent sendiri, bukan
+  // password dashboard, supaya kredensial admin tidak perlu dibagikan.
+  if (pathname === '/api/agent/ingest') {
+    if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'Gunakan POST.' });
+    if (!AGENT_KEY) {
+      return json(res, 503, {
+        ok: false,
+        error: 'Mode agent belum aktif. Isi agent.key di config.json atau NETWATCH_AGENT_KEY.',
+      });
+    }
+    const provided = String(req.headers['x-agent-key'] || url.searchParams.get('key') || '');
+    const expected = Buffer.from(AGENT_KEY);
+    const given = Buffer.from(provided);
+    const valid = given.length === expected.length && crypto.timingSafeEqual(given, expected);
+    if (!valid) return json(res, 401, { ok: false, error: 'Kunci agent salah.' });
+
+    try {
+      const body = await readBody(req);
+      const saved = monitor.ingestAgent(body);
+      return json(res, 200, { ok: true, id: saved.id, name: saved.name });
+    } catch (err) {
+      return json(res, 400, { ok: false, error: err.message });
+    }
+  }
 
   if (!authOk(req, url)) {
     res.writeHead(401, {
