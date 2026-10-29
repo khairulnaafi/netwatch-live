@@ -170,10 +170,13 @@ while true; do
   if [ "$COUNT" = "0" ] && [ "$EMPTY_HINT_SHOWN" = "0" ]; then
     EMPTY_HINT_SHOWN=1
     echo ""
-    echo "  Belum ada Wi-Fi yang terbaca. Biasanya karena izin lokasi:"
-    echo "   1. Buka Settings HP > Apps > Termux:API > Permissions > Location > Allow"
+    echo "  Belum ada Wi-Fi yang terbaca. Biasanya karena izin lokasi."
+    echo "  Ingat: Termux sendiri tidak punya menu izin lokasi (itu wajar)."
+    echo "  Izin lokasi ada di aplikasi kedua, Termux:API:"
+    echo "   1. Settings HP > Apps > Termux:API > Permissions > Location > Allow"
+    echo "      (kalau tidak ada, cari 'Other permissions' / 'Additional permissions')"
     echo "   2. Nyalakan GPS / Lokasi di HP"
-    echo "   3. Tunggu 30 detik, data akan terkirim otomatis"
+    echo "   3. Pastikan Wi-Fi HP menyala"
     echo ""
   fi
 
