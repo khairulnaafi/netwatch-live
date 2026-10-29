@@ -141,6 +141,17 @@ module.exports = async (req, res) => {
       });
     }
 
+    if (pathname === '/api/agent/enroll') {
+      return json(res, 503, {
+        ok: false,
+        error: 'Pendaftaran perangkat hanya tersedia di server live. Ini hanya demo.',
+      });
+    }
+
+    if (pathname === '/api/agent/status') {
+      return json(res, 200, { ok: true, found: false, online: false });
+    }
+
     if (pathname.startsWith('/api/')) {
       return json(res, 404, { ok: false, error: 'Endpoint tidak ditemukan.' });
     }

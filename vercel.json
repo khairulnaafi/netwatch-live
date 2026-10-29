@@ -6,6 +6,8 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.js" },
+    { "src": "/join", "dest": "/public/join.html" },
+    { "src": "/join.js", "dest": "/public/js/join.js" },
     { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
