@@ -2,6 +2,8 @@
 
 Dashboard NOC (Network Operations Center) berbasis web untuk memantau kesehatan jaringan secara langsung: status perangkat, throughput, latency, packet loss, Wi-Fi di sekitar, klien yang terhubung, aktivitas domain DNS, serta alert ke Telegram dan WhatsApp.
 
+**Demo online (mode demo):** https://netwatch-live-psi.vercel.app
+
 Aplikasi ini **tanpa dependensi npm** — cukup Node.js 18+ dan browser modern. Semua grafik digambar dengan canvas buatan sendiri, sehingga tetap ringan dan bisa dipakai offline.
 
 ```
