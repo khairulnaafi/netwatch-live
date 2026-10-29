@@ -147,9 +147,16 @@ Langkah singkat:
 3. Teman menjalankan agent dan mengisi nama lokasi (contoh `Laptop Budi`).
 4. Buka dashboard → **Wi-Fi & Klien** → pilih lokasi di dropdown **Lokasi dipantau**.
 
+Khusus Android, cukup satu perintah di Termux (script diunduh otomatis dari server):
+
+```bash
+curl -sL https://xxxxx.trycloudflare.com/agent/setup.sh | bash -s -- \
+  https://xxxxx.trycloudflare.com KUNCI_AGENT "HP Budi"
+```
+
 Panduan lengkap: [`agent/README.md`](agent/README.md)
 
-Endpoint yang dipakai agent: `POST /api/agent/ingest` dengan header `x-agent-key`. Kunci ini hanya bisa mengirim data — tidak bisa membuka dashboard.
+Endpoint yang dipakai agent: `POST /api/agent/ingest` dengan header `x-agent-key`. Kunci ini hanya bisa mengirim data — tidak bisa membuka dashboard. Script `GET /agent/setup.sh` dan `GET /agent/termux.sh` dapat diakses tanpa login karena tidak berisi rahasia.
 
 ## Deploy ke Vercel (demo showcase)
 

@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # NetWatch Live - Agent Wi-Fi untuk Termux (Android)
 #
-# Kebutuhan (sekali saja):
-#   pkg update && pkg install termux-api jq curl
-#   Aplikasi "Termux:API" juga harus terpasang (dari F-Droid).
-#   Izin Lokasi untuk Termux:API harus diaktifkan, dan GPS/Lokasi menyala.
+# Cara termudah (satu perintah, dari dashboard):
+#   curl -sL https://ALAMAT-DASHBOARD/agent/setup.sh | bash -s -- \
+#     https://ALAMAT-DASHBOARD KUNCI_AGENT "HP Budi"
 #
-# Pemakaian:
-#   ./termux.sh https://xxxxx.trycloudflare.com KUNCI_AGENT "HP Budi"
+# Kalau semua kebutuhan sudah terpasang, boleh juga langsung:
+#   ./termux.sh https://ALAMAT-DASHBOARD KUNCI_AGENT "HP Budi"
 #
 # Variabel opsional:
 #   INTERVAL=30 ./termux.sh ...   (detik antar kiriman, default 30)
@@ -34,6 +33,11 @@ for cmd in termux-wifi-scaninfo termux-wifi-connectioninfo jq curl; do
 done
 
 SERVER="${SERVER%/}"
+case "$SERVER" in
+  http://*|https://*) ;;
+  *) SERVER="https://$SERVER" ;;
+esac
+
 ID=$(printf '%s' "$NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]\+/-/g; s/^-//; s/-$//')
 [ -z "$ID" ] && ID="agent-android"
 
@@ -76,7 +80,13 @@ def ssid_of($s):
         signal: (($conn.rssi // -100) | pct(.)),
         channel: (($conn.frequency // 0) | chan(.)),
         band: (($conn.frequency // 0) | band(.)),
-        security: null
+        security: (
+          [ $scan[]
+            | select((($conn.bssid // "") != "")
+                     and ((.bssid | ascii_upcase) == ($conn.bssid | ascii_upcase)))
+            | .capabilities ]
+          | if length > 0 then (.[0] | sec(.)) else null end
+        )
       } end
     ),
     nearby: [
@@ -101,14 +111,22 @@ def ssid_of($s):
 }
 '
 
+# Cegah Android mematikan Termux saat layar mati.
+if command -v termux-wake-lock >/dev/null 2>&1; then
+  termux-wake-lock >/dev/null 2>&1 || true
+fi
+
 echo ""
 echo "  NetWatch Agent (Termux / Android)"
 echo "  Server : $SERVER"
 echo "  Lokasi : $NAME"
 echo "  ID     : $ID"
 echo ""
-echo "  Tekan Ctrl+C untuk berhenti."
+echo "  Biarkan Termux tetap terbuka. Tekan Ctrl+C untuk berhenti."
 echo ""
+
+EMPTY_HINT_SHOWN=0
+AUTH_FAILED=0
 
 while true; do
   SCAN=$(termux-wifi-scaninfo 2>/dev/null || echo '[]')
@@ -122,15 +140,45 @@ while true; do
   fi
 
   PAYLOAD=$(jq -c -n --argjson scan "$SCAN" --argjson conn "$CONN" --arg id "$ID" --arg name "$NAME" "$JQ_PROGRAM")
+  COUNT=$(printf '%s' "$PAYLOAD" | jq '.wifi.nearby | length' 2>/dev/null || echo 0)
 
-  if curl -sS -m 25 -X POST "$SERVER/api/agent/ingest" \
-      -H "x-agent-key: $KEY" \
-      -H 'Content-Type: application/json; charset=utf-8' \
-      --data-binary "$PAYLOAD" >/dev/null; then
-    COUNT=$(printf '%s' "$PAYLOAD" | jq '.wifi.nearby | length')
-    echo "[$(date +%H:%M:%S)] terkirim: $COUNT jaringan"
-  else
-    echo "[$(date +%H:%M:%S)] gagal mengirim, coba lagi nanti"
+  BODY="${TMPDIR:-${PREFIX:-/tmp}/tmp}/netwatch-agent-reply.json"
+  CODE=$(curl -sS -m 25 -o "$BODY" -w '%{http_code}' \
+    -X POST "$SERVER/api/agent/ingest" \
+    -H "x-agent-key: $KEY" \
+    -H 'Content-Type: application/json; charset=utf-8' \
+    --data-binary "$PAYLOAD" 2>/dev/null) || CODE="000"
+
+  STAMP=$(date +%H:%M:%S)
+  case "$CODE" in
+    200)
+      echo "[$STAMP] terkirim: $COUNT jaringan"
+      AUTH_FAILED=0
+      ;;
+    401)
+      echo "[$STAMP] KUNCI AGENT SALAH. Minta kunci yang benar ke pemilik dashboard."
+      AUTH_FAILED=1
+      ;;
+    000)
+      echo "[$STAMP] tidak bisa menghubungi server (cek internet / alamat dashboard)"
+      ;;
+    *)
+      echo "[$STAMP] server menolak (HTTP $CODE)"
+      ;;
+  esac
+
+  if [ "$COUNT" = "0" ] && [ "$EMPTY_HINT_SHOWN" = "0" ]; then
+    EMPTY_HINT_SHOWN=1
+    echo ""
+    echo "  Belum ada Wi-Fi yang terbaca. Biasanya karena izin lokasi:"
+    echo "   1. Buka Settings HP > Apps > Termux:API > Permissions > Location > Allow"
+    echo "   2. Nyalakan GPS / Lokasi di HP"
+    echo "   3. Tunggu 30 detik, data akan terkirim otomatis"
+    echo ""
+  fi
+
+  if [ "$AUTH_FAILED" = "1" ]; then
+    exit 1
   fi
 
   sleep "$INTERVAL"

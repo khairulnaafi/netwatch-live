@@ -297,6 +297,28 @@ async function handleRequest(req, res) {
     }
   }
 
+  // Script agent publik: tidak berisi rahasia (kunci dikirim sebagai argumen),
+  // supaya pengguna Android bisa menjalankan satu perintah di Termux.
+  if (pathname === '/agent/setup.sh' || pathname === '/agent/termux.sh') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      return json(res, 405, { ok: false, error: 'Method tidak diizinkan.' });
+    }
+    const file = pathname === '/agent/setup.sh' ? 'termux-setup.sh' : 'termux.sh';
+    let script;
+    try {
+      script = fs.readFileSync(path.join(ROOT, 'agent', file));
+    } catch (_) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end('Script agent tidak ditemukan.');
+    }
+    res.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Content-Length': script.length,
+      'Cache-Control': 'no-store',
+    });
+    return res.end(req.method === 'HEAD' ? undefined : script);
+  }
+
   if (!authOk(req, url)) {
     res.writeHead(401, {
       'WWW-Authenticate': 'Basic realm="NetWatch Live", charset="UTF-8"',

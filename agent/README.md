@@ -33,20 +33,47 @@ Baris 1 alamat, baris 2 kunci, baris 3 nama lokasi.
 
 ## Android (Termux)
 
-Butuh dua aplikasi dari **F-Droid** (bukan Play Store): **Termux** dan **Termux:API**.
+Butuh dua aplikasi dari **F-Droid** (bukan Play Store):
+
+1. **Termux** — terminal untuk Android
+2. **Termux:API** — jembatan agar Termux bisa membaca Wi-Fi
+
+Keduanya harus dipasang. Termux saja tidak cukup.
+
+### Cara tercepat: satu perintah
+
+Buka Termux, tempel ini (ganti alamat & kunci):
 
 ```bash
-pkg update && pkg install termux-api jq curl
-chmod +x termux.sh
-./termux.sh https://xxxxx.trycloudflare.com KUNCI_AGENT "HP Budi"
+curl -sL https://xxxxx.trycloudflare.com/agent/setup.sh | bash -s -- \
+  https://xxxxx.trycloudflare.com KUNCI_AGENT "HP Budi"
 ```
 
-Syarat penting:
+Script akan otomatis memasang paket, memeriksa aplikasi Termux:API, memeriksa izin lokasi, lalu menjalankan agent. Kalau ada yang kurang, script memberi tahu persis apa yang harus diperbaiki.
 
-- Izin **Lokasi** untuk Termux:API harus diaktifkan (Settings → Apps → Termux:API → Permissions → Location).
-- **GPS/Lokasi** di HP harus menyala.
+### Cara manual
+
+```bash
+pkg update && pkg install -y termux-api jq curl
+curl -sL https://xxxxx.trycloudflare.com/agent/termux.sh -o termux.sh
+bash termux.sh https://xxxxx.trycloudflare.com KUNCI_AGENT "HP Budi"
+```
+
+### Kalau data tidak muncul
+
+Agent akan memberi pesan yang jelas. Penyebab paling umum:
+
+- **Aplikasi Termux:API belum terpasang** → ambil dari F-Droid.
+- **Izin Lokasi belum diberikan** → Settings → Apps → Termux:API → Permissions → Location → Allow.
+- **GPS/Lokasi di HP mati** → nyalakan.
+- **Wi-Fi di HP mati** → nyalakan (scan tetap butuh Wi-Fi aktif).
+- **Kunci agent salah** → agent berhenti dengan pesan `KUNCI AGENT SALAH`.
+
+Catatan:
+
 - Android membatasi frekuensi scan; default interval 30 detik sudah aman.
 - Beberapa HP mengembalikan SSID `<unknown ssid>` bila izin lokasi belum diberikan.
+- Biarkan Termux tetap terbuka. Agent memakai `termux-wake-lock` supaya tidak dimatikan Android.
 
 ## Linux / macOS
 
