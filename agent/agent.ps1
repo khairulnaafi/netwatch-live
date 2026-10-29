@@ -39,6 +39,13 @@ function Get-Band([int]$Channel) {
   return '6 GHz'
 }
 
+function Normalize-Security([string]$Value) {
+  if (-not $Value) { return $null }
+  $text = $Value.Trim()
+  if ($text -match '^(Open|Terbuka|None|Tidak ada)$') { return 'Terbuka' }
+  return $text
+}
+
 function Get-WifiScan {
   $text = (netsh wlan show networks mode=bssid) -join "`n"
   $list = New-Object System.Collections.ArrayList
@@ -69,7 +76,7 @@ function Get-WifiScan {
       continue
     }
     if ($line -match '^\s*(?:Radio type|Jenis radio)\s*:\s*(.+)$') { $cur.radio = $matches[1].Trim(); continue }
-    if ($line -match '^\s*(?:Authentication|Otentikasi)\s*:\s*(.+)$') { $cur.security = $matches[1].Trim(); continue }
+    if ($line -match '^\s*(?:Authentication|Otentikasi)\s*:\s*(.+)$') { $cur.security = Normalize-Security $matches[1]; continue }
   }
 
   return $list
@@ -101,7 +108,7 @@ function Get-WifiCurrent($Scan) {
     channel  = $channel
     band     = Get-Band ([int]$channel)
     radio    = $radio
-    security = if ($match) { $match.security } else { $null }
+    security = if ($match) { Normalize-Security $match.security } else { $null }
   }
 }
 
