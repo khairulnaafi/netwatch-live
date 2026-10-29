@@ -182,10 +182,22 @@ function safeString(value, max = 500) {
 }
 
 function serveStatic(req, res, pathname) {
-  let relative = decodeURIComponent(pathname);
+  let relative;
+  try {
+    relative = decodeURIComponent(pathname);
+  } catch (_) {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Path tidak valid.');
+    return;
+  }
   if (relative === '/' || relative === '') relative = '/index.html';
+  if (relative.includes('\0')) {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Path tidak valid.');
+    return;
+  }
   const filePath = path.normalize(path.join(PUBLIC_DIR, relative));
-  if (!filePath.startsWith(PUBLIC_DIR)) {
+  if (filePath !== PUBLIC_DIR && !filePath.startsWith(PUBLIC_DIR + path.sep)) {
     res.writeHead(403);
     res.end('Forbidden');
     return;
@@ -210,9 +222,45 @@ function serveStatic(req, res, pathname) {
 /* HTTP server                                                           */
 /* -------------------------------------------------------------------- */
 
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const pathname = url.pathname;
+/**
+ * Parse URL permintaan dengan aman. Proksi/tunnel kadang mengirim path aneh
+ * seperti "//" yang membuat `new URL()` melempar error dan mematikan proses.
+ */
+function requestUrl(req) {
+  const raw = String(req.url || '/');
+  const host = String(req.headers.host || 'localhost').replace(/[^A-Za-z0-9.:\-\[\]]/g, '');
+  try {
+    if (/^https?:\/\//i.test(raw)) return new URL(raw);
+    return new URL(`http://${host}${raw.startsWith('/') ? raw : `/${raw}`}`);
+  } catch (_) {
+    return null;
+  }
+}
+
+// Jaring pengaman: satu promise yang gagal tidak boleh mematikan dashboard.
+process.on('unhandledRejection', (err) => {
+  console.error('[unhandled]', err && err.message ? err.message : err);
+});
+
+const server = http.createServer((req, res) => {
+  handleRequest(req, res).catch((err) => {
+    console.error('[http]', err);
+    try {
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      }
+      res.end('Terjadi kesalahan pada server.');
+    } catch (_) {}
+  });
+});
+
+async function handleRequest(req, res) {
+  const url = requestUrl(req);
+  if (!url) {
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Permintaan tidak valid.');
+  }
+  const pathname = url.pathname.replace(/^\/{2,}/, '/');
 
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
@@ -362,6 +410,14 @@ const server = http.createServer(async (req, res) => {
   } catch (err) {
     console.error('[http]', err);
     return json(res, 500, { ok: false, error: err.message });
+  }
+}
+
+server.on('clientError', (err, socket) => {
+  if (socket.writable) {
+    socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+  } else {
+    socket.destroy();
   }
 });
 

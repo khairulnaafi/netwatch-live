@@ -60,8 +60,17 @@ function readBody(req) {
 }
 
 module.exports = async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const pathname = url.pathname.replace(/\/+$/, '') || '/';
+  let url;
+  try {
+    const host = String(req.headers.host || 'localhost').replace(/[^A-Za-z0-9.:\-\[\]]/g, '');
+    const raw = String(req.url || '/');
+    url = new URL(`http://${host}${raw.startsWith('/') ? raw : `/${raw}`}`);
+  } catch (_) {
+    res.statusCode = 400;
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.end('Permintaan tidak valid.');
+  }
+  const pathname = url.pathname.replace(/^\/{2,}/, '/').replace(/\/+$/, '') || '/';
 
   try {
     if (pathname === '/api/state' && req.method === 'GET') {
