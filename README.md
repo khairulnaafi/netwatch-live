@@ -154,6 +154,18 @@ curl -sL https://xxxxx.trycloudflare.com/agent/setup.sh | bash -s -- \
   https://xxxxx.trycloudflare.com KUNCI_AGENT "HP Budi"
 ```
 
+### Halaman publik untuk teman: `/join`
+
+Buka `https://xxxxx.trycloudflare.com/join` (tanpa password) lalu bagikan tautannya.
+Halaman ini:
+
+1. meminta nama perangkat,
+2. menampilkan perintah/perangkat yang sesuai (Android, Windows, Linux/macOS),
+3. memeriksa otomatis dan menampilkan daftar Wi-Fi di sekitar perangkat itu.
+
+Setiap perangkat mendapat **kunci sendiri** (berlaku 7 hari) yang hanya bisa menulis ke
+lokasinya sendiri, jadi kunci utama dashboard tidak pernah dibagikan ke teman.
+
 Panduan lengkap: [`agent/README.md`](agent/README.md)
 
 Endpoint yang dipakai agent: `POST /api/agent/ingest` dengan header `x-agent-key`. Kunci ini hanya bisa mengirim data — tidak bisa membuka dashboard. Script `GET /agent/setup.sh` dan `GET /agent/termux.sh` dapat diakses tanpa login karena tidak berisi rahasia.

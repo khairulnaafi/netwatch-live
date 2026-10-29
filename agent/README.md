@@ -4,6 +4,15 @@ Agent kecil yang dijalankan di **perangkat teman**. Tugasnya memindai Wi-Fi di s
 
 Ini diperlukan karena **browser tidak bisa** memindai daftar Wi-Fi di sekitar pengunjung. Tanpa agent, dashboard hanya menampilkan Wi-Fi di sekitar komputer yang menjalankan server.
 
+## Cara paling mudah: halaman `/join`
+
+Buka `https://ALAMAT-DASHBOARD/join` lalu kirim tautannya ke teman. Halaman itu memandu
+sendiri: pilih perangkat, salin perintah (alamat + kunci sudah terisi otomatis), lalu
+menampilkan daftar Wi-Fi di sekitar perangkat teman Anda.
+
+Setiap perangkat yang mendaftar lewat `/join` mendapat kunci sendiri yang hanya bisa
+menulis ke lokasinya sendiri dan berlaku 7 hari.
+
 ## Yang dibutuhkan dari Anda (pemilik dashboard)
 
 1. Dashboard live sedang berjalan (misalnya lewat `start-live.bat`).

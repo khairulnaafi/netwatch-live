@@ -56,6 +56,13 @@ function authOk(req, url) {
   return false;
 }
 
+// Berkas agent yang boleh diunduh tanpa login (tidak berisi rahasia).
+const PUBLIC_SCRIPTS = {
+  '/agent/setup.sh': 'termux-setup.sh',
+  '/agent/termux.sh': 'termux.sh',
+  '/agent/agent.sh': 'agent.sh',
+};
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -148,6 +155,22 @@ function json(res, status, data) {
     'Cache-Control': 'no-store',
   });
   res.end(body);
+}
+
+function sendFile(res, filePath, type, req) {
+  let data;
+  try {
+    data = fs.readFileSync(filePath);
+  } catch (_) {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Berkas tidak ditemukan.');
+  }
+  res.writeHead(200, {
+    'Content-Type': type,
+    'Content-Length': data.length,
+    'Cache-Control': 'no-store',
+  });
+  return res.end(req && req.method === 'HEAD' ? undefined : data);
 }
 
 function readBody(req) {
@@ -283,13 +306,13 @@ async function handleRequest(req, res) {
       });
     }
     const provided = String(req.headers['x-agent-key'] || url.searchParams.get('key') || '');
-    const expected = Buffer.from(AGENT_KEY);
-    const given = Buffer.from(provided);
-    const valid = given.length === expected.length && crypto.timingSafeEqual(given, expected);
-    if (!valid) return json(res, 401, { ok: false, error: 'Kunci agent salah.' });
+    const check = monitor.checkAgentKey(provided, AGENT_KEY);
+    if (!check.ok) return json(res, 401, { ok: false, error: 'Kunci agent salah.' });
 
     try {
       const body = await readBody(req);
+      // Kunci perangkat hanya boleh menulis ke lokasinya sendiri.
+      if (check.boundId) body.id = check.boundId;
       const saved = monitor.ingestAgent(body);
       return json(res, 200, { ok: true, id: saved.id, name: saved.name });
     } catch (err) {
@@ -297,26 +320,57 @@ async function handleRequest(req, res) {
     }
   }
 
+  // Halaman publik untuk teman: mendaftarkan perangkat lalu melihat Wi-Fi
+  // di sekitarnya. Tidak memakai password dashboard.
+  if (pathname === '/join' && (req.method === 'GET' || req.method === 'HEAD')) {
+    return sendFile(res, path.join(PUBLIC_DIR, 'join.html'), 'text/html; charset=utf-8', req);
+  }
+
+  if (pathname === '/join.js' && (req.method === 'GET' || req.method === 'HEAD')) {
+    return sendFile(res, path.join(PUBLIC_DIR, 'js', 'join.js'), 'text/javascript; charset=utf-8', req);
+  }
+
+  if (pathname === '/agent/netwatch-agent.zip' && (req.method === 'GET' || req.method === 'HEAD')) {
+    return sendFile(res, path.join(ROOT, 'agent', 'netwatch-agent.zip'), 'application/zip', req);
+  }
+
+  if (pathname === '/api/agent/status' && req.method === 'GET') {
+    const id = url.searchParams.get('id');
+    const key = url.searchParams.get('key') || req.headers['x-agent-key'] || '';
+    const check = monitor.checkAgentKey(key, AGENT_KEY);
+    if (!check.ok) return json(res, 401, { ok: false, error: 'Sesi tidak valid.' });
+    if (check.boundId && check.boundId !== String(id || '')) {
+      return json(res, 403, { ok: false, error: 'Kunci tidak cocok dengan perangkat ini.' });
+    }
+    return json(res, 200, monitor.agentStatus(id));
+  }
+
+  if (pathname === '/api/agent/enroll' && req.method === 'POST') {
+    if (!AGENT_KEY) {
+      return json(res, 503, { ok: false, error: 'Mode agent belum aktif di server ini.' });
+    }
+    try {
+      const body = await readBody(req);
+      const info = monitor.enrollAgent(body && body.name);
+      return json(res, 200, {
+        ok: true,
+        id: info.id,
+        name: info.name,
+        key: info.key,
+        expiresAt: info.expiresAt,
+      });
+    } catch (err) {
+      return json(res, 400, { ok: false, error: err.message });
+    }
+  }
+
   // Script agent publik: tidak berisi rahasia (kunci dikirim sebagai argumen),
   // supaya pengguna Android bisa menjalankan satu perintah di Termux.
-  if (pathname === '/agent/setup.sh' || pathname === '/agent/termux.sh') {
+  if (PUBLIC_SCRIPTS[pathname]) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       return json(res, 405, { ok: false, error: 'Method tidak diizinkan.' });
     }
-    const file = pathname === '/agent/setup.sh' ? 'termux-setup.sh' : 'termux.sh';
-    let script;
-    try {
-      script = fs.readFileSync(path.join(ROOT, 'agent', file));
-    } catch (_) {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      return res.end('Script agent tidak ditemukan.');
-    }
-    res.writeHead(200, {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Content-Length': script.length,
-      'Cache-Control': 'no-store',
-    });
-    return res.end(req.method === 'HEAD' ? undefined : script);
+    return sendFile(res, path.join(ROOT, 'agent', PUBLIC_SCRIPTS[pathname]), 'text/plain; charset=utf-8', req);
   }
 
   if (!authOk(req, url)) {

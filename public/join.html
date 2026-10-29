@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NetWatch — Wi-Fi di sekitar Anda</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root {
+    --bg: #070b10;
+    --panel: #0f1720;
+    --panel-2: #131c26;
+    --border: #1f2a36;
+    --text: #e6edf5;
+    --muted: #8b9bb0;
+    --muted-2: #64748b;
+    --cyan: #22d3ee;
+    --emerald: #34d399;
+    --amber: #fbbf24;
+    --red: #fb7185;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 50% -20%, rgba(34, 211, 238, 0.10), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 28px 18px 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 26px; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    color: var(--cyan); font-size: 17px;
+  }
+  .brand-name { font-weight: 700; letter-spacing: 0.14em; font-size: 13px; }
+  .brand-sub { color: var(--muted-2); font-size: 10px; letter-spacing: 0.18em; }
+  h1 { font-size: 26px; line-height: 1.25; margin: 0 0 10px; letter-spacing: -0.02em; }
+  .lead { color: var(--muted); margin: 0 0 18px; font-size: 14px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card h2 { font-size: 13px; margin: 0 0 4px; letter-spacing: 0.02em; }
+  .card .sub { color: var(--muted-2); font-size: 12px; margin: 0 0 14px; }
+  .note {
+    border: 1px solid rgba(251, 191, 36, 0.28);
+    background: rgba(251, 191, 36, 0.07);
+    color: #f3d79a;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    margin-bottom: 16px;
+  }
+  .note b { color: #ffd479; }
+  label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  input[type="text"] {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 11px 12px;
+    font-size: 14px;
+    outline: none;
+  }
+  input[type="text"]:focus { border-color: rgba(34, 211, 238, 0.5); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border-radius: 10px; padding: 11px 16px; font-size: 13px; font-weight: 600;
+    border: 1px solid transparent; cursor: pointer; text-decoration: none;
+    font-family: inherit;
+  }
+  .btn-primary { background: var(--cyan); color: #04212a; }
+  .btn-primary:hover { filter: brightness(1.07); }
+  .btn-ghost { background: var(--panel-2); border-color: var(--border); color: var(--text); }
+  .btn-ghost:hover { border-color: rgba(34, 211, 238, 0.4); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 7px 14px; font-size: 12px; cursor: pointer;
+    font-family: inherit;
+  }
+  .tab.active { background: rgba(34, 211, 238, 0.14); border-color: rgba(34, 211, 238, 0.5); color: var(--cyan); }
+  .pane { display: none; }
+  .pane.active { display: block; }
+  .steps { margin: 0; padding-left: 20px; font-size: 13px; color: var(--muted); }
+  .steps li { margin-bottom: 10px; }
+  .steps b { color: var(--text); font-weight: 600; }
+  code, pre {
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+  }
+  pre {
+    background: #05090d;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    overflow-x: auto;
+    margin: 8px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: #b6e6f5;
+  }
+  .copy { margin-top: 2px; }
+  .status {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; background: var(--panel-2);
+  }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--muted-2); flex: 0 0 auto;
+  }
+  .dot.wait { background: var(--amber); animation: pulse 1.4s infinite; }
+  .dot.ok { background: var(--emerald); box-shadow: 0 0 12px rgba(52, 211, 153, 0.7); }
+  @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.35 } }
+  .status-text { font-size: 13px; }
+  .status-text small { display: block; color: var(--muted-2); font-size: 11px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12.5px; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted-2); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+  td.mono { font-family: "Cascadia Code", Consolas, monospace; font-size: 11.5px; color: var(--muted); }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 10.5px; border: 1px solid var(--border); color: var(--muted);
+  }
+  .badge.open { border-color: rgba(251, 113, 133, 0.5); color: var(--red); }
+  .badge.good { border-color: rgba(52, 211, 153, 0.45); color: var(--emerald); }
+  .bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; margin-right: 6px; }
+  .bars i { width: 3px; background: var(--muted-2); border-radius: 1px; display: block; }
+  .bars i.on { background: var(--cyan); }
+  .hidden { display: none !important; }
+  .foot { color: var(--muted-2); font-size: 11.5px; margin-top: 22px; }
+  .foot a { color: var(--muted); }
+  .err { color: var(--red); font-size: 12.5px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-mark">◉</div>
+    <div>
+      <div class="brand-name">NETWATCH</div>
+      <div class="brand-sub">LIVE OPS</div>
+    </div>
+  </div>
+
+  <h1>Wi-Fi di sekitar perangkat Anda</h1>
+  <p class="lead">
+    Halaman ini menampilkan daftar Wi-Fi yang tertangkap oleh perangkat Anda sendiri —
+    bukan Wi-Fi milik pemilik dashboard.
+  </p>
+
+  <div class="note">
+    <b>Kenapa perlu satu langkah?</b> Browser (Chrome, Safari, Edge) sengaja
+    <b>tidak diizinkan</b> memindai daftar Wi-Fi. Ini aturan Google dan Apple demi privasi,
+    bukan kekurangan situs ini. Jadi perlu bantuan aplikasi kecil di perangkat Anda.
+  </div>
+
+  <div class="card" id="stepName">
+    <h2>1. Nama perangkat</h2>
+    <p class="sub">Supaya Anda dan pemilik dashboard bisa membedakan perangkat.</p>
+    <label for="deviceName">Contoh: HP Budi, Laptop Rina</label>
+    <input id="deviceName" type="text" maxlength="40" placeholder="HP Budi" autocomplete="off" />
+    <div class="row" style="margin-top:12px">
+      <button class="btn btn-primary" id="startBtn">Lanjut</button>
+      <span class="sub" style="margin:0;color:var(--muted-2);font-size:11.5px">Tidak perlu daftar akun.</span>
+    </div>
+    <div class="err hidden" id="nameErr"></div>
+  </div>
+
+  <div class="card hidden" id="stepInstall">
+    <h2>2. Jalankan sekali di perangkat ini</h2>
+    <p class="sub">Pilih perangkat Anda. Setelah selesai, daftar Wi-Fi muncul di bawah otomatis.</p>
+
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="android">HP Android</button>
+      <button class="tab" data-tab="windows">Laptop Windows</button>
+      <button class="tab" data-tab="unix">Linux / macOS</button>
+    </div>
+
+    <div class="pane active" data-pane="android">
+      <ol class="steps">
+        <li>Pasang dua aplikasi dari <b>F-Droid</b> (bukan Play Store):<br />
+          <a class="btn btn-ghost" style="margin-top:6px" href="https://f-droid.org/packages/com.termux/" target="_blank" rel="noopener">Termux</a>
+          <a class="btn btn-ghost" style="margin-top:6px" href="https://f-droid.org/packages/com.termux.api/" target="_blank" rel="noopener">Termux:API</a>
+        </li>
+        <li>Buka <b>Termux</b>, tempel perintah ini, tekan Enter:
+          <pre id="cmdAndroid">memuat…</pre>
+          <button class="btn btn-ghost copy" data-copy="cmdAndroid">Salin perintah</button>
+        </li>
+        <li>Kalau diminta izin, pilih <b>Allow</b> untuk Lokasi pada <b>Termux:API</b>,
+          dan nyalakan <b>GPS</b> di HP.</li>
+        <li>Biarkan Termux tetap terbuka. Data terkirim tiap 30 detik.</li>
+      </ol>
+    </div>
+
+    <div class="pane" data-pane="windows">
+      <ol class="steps">
+        <li>Unduh agent:
+          <div class="row" style="margin-top:6px">
+            <a class="btn btn-primary" href="/agent/netwatch-agent.zip" download>Unduh agent (ZIP)</a>
+          </div>
+        </li>
+        <li>Ekstrak, lalu buat file <b>agent-config.txt</b> di folder yang sama dengan isi ini:
+          <pre id="cfgWindows">memuat…</pre>
+          <button class="btn btn-ghost copy" data-copy="cfgWindows">Salin isi agent-config.txt</button>
+        </li>
+        <li>Klik dua kali <b>agent.bat</b>. Biarkan jendelanya terbuka.</li>
+      </ol>
+    </div>
+
+    <div class="pane" data-pane="unix">
+      <ol class="steps">
+        <li>Buka Terminal, tempel perintah ini, tekan Enter:
+          <pre id="cmdUnix">memuat…</pre>
+          <button class="btn btn-ghost copy" data-copy="cmdUnix">Salin perintah</button>
+        </li>
+        <li>Linux butuh <code>nmcli</code>. macOS butuh perintah <code>airport</code>
+          (bisa tidak tersedia di macOS Sonoma ke atas).</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card hidden" id="stepStatus">
+    <h2>3. Hasil</h2>
+    <p class="sub" id="statusSub">Menunggu data pertama dari perangkat Anda…</p>
+    <div class="status">
+      <span class="dot wait" id="statusDot"></span>
+      <div class="status-text" id="statusText">
+        Menunggu data…
+        <small id="statusMeta">Halaman ini memeriksa otomatis tiap 5 detik.</small>
+      </div>
+    </div>
+    <div id="resultTable"></div>
+  </div>
+
+  <p class="foot">
+    Data yang dikirim hanya: nama Wi-Fi (SSID), sinyal, channel, band, dan jenis keamanan.
+    Tidak ada isi trafik, kata sandi, atau data pribadi. Data disimpan di memori server
+    dan hilang saat server dimatikan.
+    <br />Hanya pindai jaringan yang Anda miliki atau yang Anda punya izin untuk memantau.
+  </p>
+</div>
+<script src="/join.js"></script>
+</body>
+</html>
