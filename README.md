@@ -76,6 +76,36 @@ Server membuka browser secara otomatis. Untuk menjalankan tanpa membuka browser 
 node server.js --no-open
 ```
 
+## Deploy ke Vercel (demo showcase)
+
+Repo ini sudah dilengkapi adapter serverless di `api/index.js` dan `vercel.json`, sehingga bisa di-deploy ke Vercel untuk **demo publik**.
+
+1. Buka [vercel.com/new](https://vercel.com/new).
+2. Import repo GitHub `netwatch-live`.
+3. Framework preset: **Other**.
+4. Build command: kosongkan.
+5. Output directory: `public` (sudah diatur `vercel.json`).
+6. Klik **Deploy**.
+
+Atau lewat CLI:
+
+```bat
+npx vercel --prod
+```
+
+**Penting — batasan Vercel:**
+
+| Fitur | Di Vercel |
+|---|---|
+| Mode demo + simulasi gangguan | ✅ Jalan |
+| Polling data demo | ✅ Jalan (SSE otomatis fallback ke polling) |
+| Monitoring live (ping/netsh/ARP) | ❌ Tidak bisa (Linux serverless, tanpa ICMP) |
+| DNS logger UDP | ❌ Tidak bisa |
+| Simpan konfigurasi/token | ❌ Read-only |
+| Alert Telegram/WhatsApp | ❌ Tidak dikirim dari demo Vercel |
+
+Untuk monitoring **live** dan alert sungguhan, jalankan `server.js` di VPS, Render, Railway, Fly.io, atau komputer sendiri. Vercel hanya untuk memamerkan tampilan dashboard.
+
 ## Mode Demo vs Live
 
 | | Demo | Live |
@@ -250,12 +280,15 @@ curl -X POST http://127.0.0.1:8787/api/mode -H "Content-Type: application/json" 
 ```
 netwatch-live/
 ├─ server.js              HTTP server, routing, SSE, config
-├─ config.json            konfigurasi runtime
+├─ api/index.js           adapter Vercel (demo serverless)
+├─ vercel.json            konfigurasi deploy Vercel
+├─ config.json            konfigurasi runtime (tidak di-commit)
 ├─ start.bat              launcher Windows
 ├─ tools/
 │  └─ dns-query.js        klien uji DNS logger
 ├─ lib/
 │  ├─ monitor.js          mesin monitoring, alert, snapshot
+│  ├─ defaults.js         konfigurasi default
 │  ├─ demo.js             simulasi perangkat/Wi-Fi/klien/DNS
 │  ├─ network.js          ping, gateway, netstat, ARP, vendor MAC
 │  ├─ wifi.js             parser netsh wlan, scan Wi-Fi & klien

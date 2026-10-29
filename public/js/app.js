@@ -32,6 +32,8 @@
     charts: { traffic: null, latency: null, drawer: null },
     sparks: { online: [], traffic: [], latency: [] },
     sse: null,
+    sseRetry: null,
+    pollTimer: null,
     busy: false,
   };
 
@@ -1091,7 +1093,28 @@
     $('#clock').textContent = [now.getHours(), now.getMinutes(), now.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':');
   }
 
+  function startPolling() {
+    if (state.pollTimer) return;
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/state', { cache: 'no-store' });
+        if (res.ok) applySnapshot(await res.json());
+      } catch (_) {}
+    };
+    state.pollTimer = setInterval(poll, 3000);
+    poll();
+  }
+
+  function stopPolling() {
+    if (state.pollTimer) clearInterval(state.pollTimer);
+    state.pollTimer = null;
+  }
+
   function connectSSE() {
+    if (typeof EventSource === 'undefined') {
+      startPolling();
+      return;
+    }
     if (state.sse) state.sse.close();
     const es = new EventSource('/api/stream');
     es.addEventListener('snapshot', (event) => {
@@ -1100,12 +1123,22 @@
       } catch (_) {}
     });
     es.onopen = () => {
+      stopPolling();
       const dot = $('.live-dot');
       if (dot) dot.style.background = 'var(--emerald)';
     };
     es.onerror = () => {
       const dot = $('.live-dot');
       if (dot) dot.style.background = 'var(--rose)';
+      try { es.close(); } catch (_) {}
+      if (state.sse === es) state.sse = null;
+      startPolling();
+      if (!state.sseRetry) {
+        state.sseRetry = setTimeout(() => {
+          state.sseRetry = null;
+          if (!state.sse) connectSSE();
+        }, 30000);
+      }
     };
     state.sse = es;
   }
