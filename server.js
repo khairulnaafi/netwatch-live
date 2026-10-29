@@ -3,6 +3,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFile } = require('child_process');
 const { Monitor } = require('./lib/monitor');
 const { DEFAULTS } = require('./lib/defaults');
@@ -11,6 +12,49 @@ const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const CONFIG_PATH = process.env.NETWATCH_CONFIG || path.join(ROOT, 'config.json');
 const OPEN_BROWSER = !process.argv.includes('--no-open');
+const AUTH_USER = process.env.NETWATCH_USER || '';
+const AUTH_PASS = process.env.NETWATCH_PASS || '';
+const AUTH_TOKEN =
+  AUTH_USER && AUTH_PASS
+    ? crypto.createHash('sha256').update(`${AUTH_USER}:${AUTH_PASS}`).digest('hex').slice(0, 32)
+    : '';
+
+function parseCookies(req) {
+  const out = {};
+  for (const part of String(req.headers.cookie || '').split(';')) {
+    const index = part.indexOf('=');
+    if (index < 0) continue;
+    out[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
+  }
+  return out;
+}
+
+function basicOk(req) {
+  const [scheme, encoded] = String(req.headers.authorization || '').split(' ');
+  if (scheme !== 'Basic' || !encoded) return false;
+  let decoded;
+  try {
+    decoded = Buffer.from(encoded, 'base64').toString('utf8');
+  } catch (_) {
+    return false;
+  }
+  const index = decoded.indexOf(':');
+  if (index < 0) return false;
+  const user = decoded.slice(0, index);
+  const pass = decoded.slice(index + 1);
+  const given = Buffer.from(`${user}:${pass}`);
+  const expected = Buffer.from(`${AUTH_USER}:${AUTH_PASS}`);
+  return given.length === expected.length && crypto.timingSafeEqual(given, expected);
+}
+
+function authOk(req, url) {
+  if (!AUTH_USER && !AUTH_PASS) return true;
+  if (!AUTH_USER || !AUTH_PASS) return false;
+  if (basicOk(req)) return true;
+  if (AUTH_TOKEN && parseCookies(req).nw_session === AUTH_TOKEN) return true;
+  if (AUTH_TOKEN && url && url.searchParams.get('k') === AUTH_TOKEN) return true;
+  return false;
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -177,6 +221,25 @@ const server = http.createServer(async (req, res) => {
     'Content-Security-Policy',
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'"
   );
+
+  if (!authOk(req, url)) {
+    res.writeHead(401, {
+      'WWW-Authenticate': 'Basic realm="NetWatch Live", charset="UTF-8"',
+      'Content-Type': 'text/plain; charset=utf-8',
+    });
+    return res.end('Autentikasi diperlukan.');
+  }
+
+  // Link akses sekali klik: /?k=<token> menyimpan sesi di cookie lalu
+  // mengalihkan ke URL bersih supaya token tidak tertinggal di address bar.
+  if (AUTH_TOKEN && url.searchParams.get('k') === AUTH_TOKEN && parseCookies(req).nw_session !== AUTH_TOKEN) {
+    const secure = String(req.headers['x-forwarded-proto'] || '').includes('https') ? '; Secure' : '';
+    res.setHeader('Set-Cookie', `nw_session=${AUTH_TOKEN}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}`);
+    const clean = new URL(url.href);
+    clean.searchParams.delete('k');
+    res.writeHead(302, { Location: `${clean.pathname}${clean.search}` });
+    return res.end();
+  }
 
   try {
     if (pathname === '/api/stream') {

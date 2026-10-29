@@ -78,6 +78,57 @@ Server membuka browser secara otomatis. Untuk menjalankan tanpa membuka browser 
 node server.js --no-open
 ```
 
+## Akses publik + monitoring live (Cloudflare Tunnel)
+
+Vercel tidak bisa menjalankan monitoring live (serverless, tanpa ICMP/`netsh`/ARP/UDP). Supaya fitur live tetap bekerja **dan** bisa dibuka dari mana saja, jalankan server di komputer Anda lalu publikasikan lewat Cloudflare Tunnel.
+
+### 1. Siapkan kredensial
+
+Buat file `live-auth.cmd` di folder proyek (sudah masuk `.gitignore`, jadi tidak ikut ter-commit):
+
+```bat
+set NETWATCH_USER=netwatch
+set NETWATCH_PASS=gantiDenganPasswordAnda
+```
+
+### 2. Jalankan
+
+Klik dua kali **`start-live.bat`**. Skrip ini:
+
+1. Menjalankan `server.js` dalam mode live.
+2. Mengunduh `cloudflared` otomatis bila belum ada.
+3. Membuat tunnel publik dan menampilkan alamat `https://xxxxx.trycloudflare.com`.
+
+Salin alamat tersebut, lalu buka di browser. Login memakai username/password dari `live-auth.cmd`.
+
+### 3. Link sekali klik (opsional)
+
+Supaya tidak perlu mengetik password (nyaman di HP), buka:
+
+```
+https://xxxxx.trycloudflare.com/?k=<token>
+```
+
+Token = 32 karakter pertama SHA-256 dari `user:password`. Contoh membuatnya di PowerShell:
+
+```powershell
+$h = [BitConverter]::ToString(
+  [Security.Cryptography.SHA256]::Create().ComputeHash(
+    [Text.Encoding]::UTF8.GetBytes("netwatch:gantiDenganPasswordAnda")
+  )
+).Replace("-","").ToLower()
+$h.Substring(0,32)
+```
+
+Setelah link dibuka, server menyimpan sesi di cookie `HttpOnly` dan mengalihkan ke URL bersih, jadi token tidak tertinggal di address bar.
+
+### Catatan penting
+
+- Alamat `trycloudflare.com` **berubah setiap kali** tunnel dijalankan ulang.
+- Komputer harus menyala dan `start-live.bat` harus tetap berjalan.
+- Jangan bagikan link/token ke publik. Siapa pun yang punya link bisa melihat dashboard.
+- Untuk alamat tetap, gunakan **named tunnel** dengan domain sendiri (butuh akun Cloudflare).
+
 ## Deploy ke Vercel (demo showcase)
 
 Repo ini sudah dilengkapi adapter serverless di `api/index.js` dan `vercel.json`, sehingga bisa di-deploy ke Vercel untuk **demo publik**.
@@ -236,7 +287,7 @@ Arahkan DNS perangkat (atau DHCP router) ke **IP LAN komputer ini**, port **5354
 }
 ```
 
-`host: "0.0.0.0"` membuat dashboard bisa diakses dari HP/LAN. **Tidak ada autentikasi**, jadi hanya lakukan di jaringan tepercaya.
+`host: "0.0.0.0"` membuat dashboard bisa diakses dari HP/LAN. Tanpa `NETWATCH_USER`/`NETWATCH_PASS`, **tidak ada autentikasi**, jadi hanya lakukan di jaringan tepercaya.
 
 ### Environment variable
 
@@ -246,12 +297,18 @@ Arahkan DNS perangkat (atau DHCP router) ke **IP LAN komputer ini**, port **5354
 | `HOST` | Menimpa host bind |
 | `NETWATCH_CONFIG` | Path config alternatif |
 | `NETWATCH_DEMO=1` / `0` | Paksa mode demo/live |
+| `NETWATCH_USER` | Username Basic Auth (wajib bersama `NETWATCH_PASS`) |
+| `NETWATCH_PASS` | Password Basic Auth |
+
+Jika `NETWATCH_USER` dan `NETWATCH_PASS` diisi, seluruh dashboard dan API dilindungi password. Login bisa lewat prompt browser (Basic Auth) atau link `?k=<token>` yang memasang cookie sesi.
 
 Contoh:
 
 ```bat
 set PORT=9000
-set NETWATCH_DEMO=1
+set NETWATCH_DEMO=0
+set NETWATCH_USER=netwatch
+set NETWATCH_PASS=rahasia
 node server.js
 ```
 
@@ -285,7 +342,9 @@ netwatch-live/
 ├─ api/index.js           adapter Vercel (demo serverless)
 ├─ vercel.json            konfigurasi deploy Vercel
 ├─ config.json            konfigurasi runtime (tidak di-commit)
-├─ start.bat              launcher Windows
+├─ start.bat              launcher Windows (lokal)
+├─ start-live.bat         launcher live + Cloudflare Tunnel
+├─ live-auth.cmd          username/password live (tidak di-commit)
 ├─ tools/
 │  └─ dns-query.js        klien uji DNS logger
 ├─ lib/

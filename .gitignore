@@ -4,3 +4,9 @@ config.json
 .env
 .DS_Store
 Thumbs.db
+
+.vercel
+
+# Kredensial live (jangan pernah di-commit)
+live-auth.cmd
+live-auth.txt
