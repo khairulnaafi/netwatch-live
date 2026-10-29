@@ -385,7 +385,7 @@ async function handleRequest(req, res) {
   // mengalihkan ke URL bersih supaya token tidak tertinggal di address bar.
   if (AUTH_TOKEN && url.searchParams.get('k') === AUTH_TOKEN && parseCookies(req).nw_session !== AUTH_TOKEN) {
     const secure = String(req.headers['x-forwarded-proto'] || '').includes('https') ? '; Secure' : '';
-    res.setHeader('Set-Cookie', `nw_session=${AUTH_TOKEN}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}`);
+    res.setHeader('Set-Cookie', `nw_session=${AUTH_TOKEN}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${secure}`);
     const clean = new URL(url.href);
     clean.searchParams.delete('k');
     res.writeHead(302, { Location: `${clean.pathname}${clean.search}` });
@@ -536,16 +536,25 @@ server.on('error', (err) => {
 const host = process.env.HOST || config.host || '127.0.0.1';
 server.listen(PORT, host, () => {
   const url = `http://${host === '0.0.0.0' ? 'localhost' : host}:${PORT}`;
+  // Link admin sekali klik: membuka dashboard tanpa mengetik password.
+  // Token diturunkan dari user:pass, jadi hanya berubah bila kredensial diganti.
+  const adminUrl = AUTH_TOKEN ? `${url}/?k=${AUTH_TOKEN}` : url;
   console.log('');
   console.log('  NETWATCH LIVE - Network Monitoring Dashboard');
   console.log(`  ${url}`);
+  if (AUTH_TOKEN) {
+    console.log('');
+    console.log('  Link admin (langsung masuk, tanpa login):');
+    console.log(`  ${adminUrl}`);
+    console.log('  Simpan sebagai bookmark. Berlaku 1 tahun di browser ini.');
+  }
   console.log(`  Mode awal: ${monitor.mode} | Data: ${CONFIG_PATH}`);
   console.log('  Tekan Ctrl+C untuk berhenti.');
   console.log('');
   monitor.start();
 
   if (OPEN_BROWSER && process.platform === 'win32') {
-    execFile('cmd', ['/c', 'start', '', url], { windowsHide: true }, () => {});
+    execFile('cmd', ['/c', 'start', '', adminUrl], { windowsHide: true }, () => {});
   }
 });
 

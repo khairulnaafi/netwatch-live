@@ -98,18 +98,33 @@ Klik dua kali **`start-live.bat`**. Skrip ini:
 1. Menjalankan `server.js` dalam mode live.
 2. Mengunduh `cloudflared` otomatis bila belum ada.
 3. Membuat tunnel publik dan menampilkan alamat `https://xxxxx.trycloudflare.com`.
+4. **Membuka dashboard sendiri tanpa login** memakai link admin (lihat di bawah).
 
-Salin alamat tersebut, lalu buka di browser. Login memakai username/password dari `live-auth.cmd`.
+**Laptop yang menjalankan server tidak perlu login.** Login hanya berlaku untuk browser
+yang membuka dashboard, dan `start-live.bat` sudah membuatkan link admin sekali klik
+supaya Anda tidak pernah melihat prompt password di komputer sendiri.
 
-### 3. Link sekali klik (opsional)
+### 3. Link admin (langsung masuk)
 
-Supaya tidak perlu mengetik password (nyaman di HP), buka:
+Saat server menyala, kedua jendela (server dan launcher) menampilkan:
 
 ```
-https://xxxxx.trycloudflare.com/?k=<token>
+http://127.0.0.1:8787/?k=<token>                        ← di komputer sendiri
+https://xxxxx.trycloudflare.com/?k=<token>              ← untuk dibuka dari HP
 ```
 
-Token = 32 karakter pertama SHA-256 dari `user:password`. Contoh membuatnya di PowerShell:
+Simpan sebagai bookmark — cookie sesi berlaku **1 tahun**. Ganti `127.0.0.1:8787` dengan
+alamat tunnel bila ingin link yang sama bisa dipakai dari perangkat lain.
+
+Token = 32 karakter pertama SHA-256 dari `user:password`. Untuk melihat token yang sedang
+dipakai:
+
+```powershell
+cd netwatch-live
+$env:NETWATCH_USER="netwatch"; $env:NETWATCH_PASS="passwordAnda"; node tools/admin-token.js
+```
+
+Atau hitung manual:
 
 ```powershell
 $h = [BitConverter]::ToString(
@@ -121,6 +136,9 @@ $h.Substring(0,32)
 ```
 
 Setelah link dibuka, server menyimpan sesi di cookie `HttpOnly` dan mengalihkan ke URL bersih, jadi token tidak tertinggal di address bar.
+
+> Token ini setara password: siapa pun yang memegangnya bisa membuka dashboard. Jangan
+> kirim link admin ke grup publik — untuk teman, gunakan `/join` yang tidak berisi rahasia.
 
 ### Catatan penting
 
@@ -394,7 +412,8 @@ netwatch-live/
 │  ├─ termux.sh           agent Android (Termux)
 │  └─ README.md           panduan agent
 ├─ tools/
-│  └─ dns-query.js        klien uji DNS logger
+│  ├─ dns-query.js        klien uji DNS logger
+│  └─ admin-token.js      cetak token link admin (dipakai start-live.bat)
 ├─ lib/
 │  ├─ monitor.js          mesin monitoring, alert, snapshot
 │  ├─ defaults.js         konfigurasi default
@@ -406,9 +425,11 @@ netwatch-live/
 │  └─ util.js             helper
 └─ public/
    ├─ index.html          markup dashboard
+   ├─ join.html           halaman publik untuk teman (/join)
    ├─ css/style.css       tema NOC gelap + responsif
    └─ js/
       ├─ app.js           state, render, form, navigasi
+      ├─ join.js          alur /join: daftar perangkat + polling status
       └─ charts.js        grafik canvas
 ```
 

@@ -45,7 +45,7 @@ echo ============================================================
 echo   NETWATCH LIVE - MONITORING JARINGAN ASLI
 echo ============================================================
 echo   Server lokal : http://127.0.0.1:8787
-echo   Login        : %NETWATCH_USER% / (lihat live-auth.cmd)
+echo   Login        : tidak perlu (link admin dibuka otomatis)
 echo.
 echo   Tunnel publik akan dibuat. Salin alamat
 echo   https://xxxxx.trycloudflare.com yang muncul di bawah.
@@ -55,10 +55,26 @@ echo   Biarkan jendela ini tetap terbuka selama monitoring.
 echo ============================================================
 echo.
 
+set "NW_TOKEN="
+for /f "usebackq delims=" %%T in (`node "tools\admin-token.js"`) do set "NW_TOKEN=%%T"
+if defined NW_TOKEN set "ADMIN_URL=http://127.0.0.1:8787/?k=!NW_TOKEN!"
+
 start "NetWatch Server" /min cmd /c "node server.js --no-open"
 
 rem beri waktu server menyala sebelum tunnel diarahkan
 timeout /t 3 /nobreak >nul
+
+if defined ADMIN_URL (
+  echo   Link admin (langsung masuk, tanpa login):
+  echo   !ADMIN_URL!
+  echo   Simpan link itu sebagai bookmark.
+  echo.
+  start "" "!ADMIN_URL!"
+) else (
+  echo   [!] Link admin tidak bisa dibuat. Buka http://127.0.0.1:8787
+  echo       lalu login dengan %NETWATCH_USER%.
+  echo.
+)
 
 "%CF%" tunnel --url http://127.0.0.1:8787 --no-autoupdate
 
