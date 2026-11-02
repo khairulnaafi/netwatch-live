@@ -11,3 +11,7 @@ Thumbs.db
 live-auth.cmd
 live-auth.txt
 agent/agent-config.txt
+
+# Kunci perangkat hasil pendaftaran /join
+device-keys.json
+device-keys.json.tmp

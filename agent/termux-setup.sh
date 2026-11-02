@@ -35,31 +35,47 @@ fi
 ok "Berjalan di Termux"
 
 # --- 1. Paket yang dibutuhkan -------------------------------------------
-need=""
-command -v curl >/dev/null 2>&1 || need="$need curl"
-command -v jq >/dev/null 2>&1 || need="$need jq"
-command -v termux-wifi-scaninfo >/dev/null 2>&1 || need="$need termux-api"
+missing_pkgs() {
+  local out=""
+  command -v curl >/dev/null 2>&1 || out="$out curl"
+  command -v jq >/dev/null 2>&1 || out="$out jq"
+  command -v termux-wifi-scaninfo >/dev/null 2>&1 || out="$out termux-api"
+  printf '%s' "$out"
+}
+
+need="$(missing_pkgs)"
 
 if [ -n "$need" ]; then
-  info "Memasang paket:$need (bisa 1-3 menit, tunggu saja)"
+  info "Paket belum lengkap, memasang:$need"
+  line "  (unduhan bisa 1-3 menit; biarkan Termux terbuka)"
+  line ""
+  # Output sengaja ditampilkan supaya kalau gagal, penyebabnya kelihatan.
   # shellcheck disable=SC2086
-  if ! pkg install -y $need >/dev/null 2>&1; then
-    info "Memperbarui daftar paket dulu..."
-    pkg update -y >/dev/null 2>&1 || true
+  pkg install -y $need || true
+
+  # Kalau masih kurang, kemungkinan daftar paketnya sudah usang.
+  need="$(missing_pkgs)"
+  if [ -n "$need" ]; then
+    line ""
+    info "Memperbarui daftar paket Termux lalu mencoba sekali lagi..."
+    pkg update -y || true
     # shellcheck disable=SC2086
-    pkg install -y $need >/dev/null 2>&1 || true
+    pkg install -y $need || true
   fi
 fi
 
-missing=""
-command -v curl >/dev/null 2>&1 || missing="$missing curl"
-command -v jq >/dev/null 2>&1 || missing="$missing jq"
-command -v termux-wifi-scaninfo >/dev/null 2>&1 || missing="$missing termux-api"
+missing="$(missing_pkgs)"
 
 if [ -n "$missing" ]; then
-  bad "Paket ini belum terpasang:$missing"
+  bad "Paket ini masih belum terpasang:$missing"
   line ""
-  line "  Jalankan manual lalu ulangi:"
+  line "  Jalankan perintah berikut di Termux, lalu ulangi perintah tadi:"
+  line "    pkg update && pkg install -y curl jq termux-api"
+  line ""
+  line "  Kalau muncul 'Unable to locate package' atau unduhan gagal terus:"
+  line "    termux-change-repo"
+  line "  lalu pilih mirror lain (mis. 'Mirrors by Grimler' atau 'Astra ISP'),"
+  line "  setelah itu ulangi:"
   line "    pkg update && pkg install -y curl jq termux-api"
   exit 1
 fi

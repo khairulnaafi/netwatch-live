@@ -278,6 +278,11 @@
   /* ------------------------------------------------------------------ */
 
   document.addEventListener('DOMContentLoaded', function () {
+    var host = window.location.hostname;
+    if (host === '127.0.0.1' || host === 'localhost' || host === '::1') {
+      $('#localWarn').classList.remove('hidden');
+    }
+
     var tabs = document.querySelectorAll('#tabs .tab');
     for (var i = 0; i < tabs.length; i++) {
       tabs[i].addEventListener('click', function (e) {
