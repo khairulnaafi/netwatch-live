@@ -78,6 +78,20 @@ Agent akan memberi pesan yang jelas. Penyebab paling umum:
 - **Wi-Fi di HP mati** → nyalakan (scan tetap butuh Wi-Fi aktif).
 - **Kunci agent salah** → agent berhenti dengan pesan `KUNCI AGENT SALAH`.
 
+### `CANNOT LINK EXECUTABLE "curl"` (curl rusak di Termux)
+
+Ini masalah paket Termux, bukan NetWatch: `libcurl.so` dibuat untuk OpenSSL yang
+lebih baru daripada yang terpasang. Perbaiki dengan menyamakan semua paket:
+
+```bash
+pkg update
+pkg upgrade -y
+pkg reinstall curl openssl
+curl -I https://example.com     # harus muncul "HTTP/2 200"
+```
+
+Setelah curl sehat, jalankan lagi perintah agent.
+
 Catatan:
 
 - Android membatasi frekuensi scan; default interval 30 detik sudah aman.

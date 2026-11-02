@@ -141,6 +141,20 @@
   .bars i { width: 3px; background: var(--muted-2); border-radius: 1px; display: block; }
   .bars i.on { background: var(--cyan); }
   .hidden { display: none !important; }
+  .help {
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel-2);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .help summary { cursor: pointer; color: var(--muted); }
+  .help summary:hover { color: var(--cyan); }
+  .help p { margin: 10px 0 6px; }
+  .help pre { margin: 6px 0; }
+  .help code { color: #b6e6f5; }
   .foot { color: var(--muted-2); font-size: 11.5px; margin-top: 22px; }
   .foot a { color: var(--muted); }
   .err { color: var(--red); font-size: 12.5px; margin-top: 8px; }
@@ -210,6 +224,16 @@
           dan nyalakan <b>GPS</b> di HP.</li>
         <li>Biarkan Termux tetap terbuka. Data terkirim tiap 30 detik.</li>
       </ol>
+      <details class="help">
+        <summary>Error <code>CANNOT LINK EXECUTABLE "curl"</code>? Klik di sini</summary>
+        <p>Itu <code>curl</code> di Termux yang rusak (bukan situs ini). Perbaiki dengan:</p>
+        <pre>pkg update
+pkg upgrade -y
+pkg reinstall curl openssl
+curl -I https://example.com</pre>
+        <p>Kalau perintah terakhir menampilkan <code>HTTP/2 200</code>, curl sudah sehat.
+          Baru jalankan lagi perintah di langkah 2.</p>
+      </details>
     </div>
 
     <div class="pane" data-pane="windows">
