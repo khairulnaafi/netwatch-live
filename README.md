@@ -47,7 +47,7 @@ Aplikasi ini **tanpa dependensi npm** — cukup Node.js 18+ dan browser modern. 
 | Node.js | 18 atau lebih baru (disarankan 20+) |
 | OS | Windows 10/11 untuk fitur live (`ping`, `netsh wlan`, `netstat`, `arp`) |
 | Browser | Chrome, Edge, Firefox, atau Safari modern |
-| Hak akses | Tidak perlu admin untuk port 8787 dan DNS logger 5354 |
+| Hak akses | Tidak perlu admin untuk port 8787; membuka UDP 53 di firewall butuh admin sekali |
 
 Mode demo berjalan di Windows, Linux, dan macOS. Fitur live yang memakai perintah Windows hanya aktif di Windows.
 
@@ -285,7 +285,7 @@ DNS logger mendengarkan query DNS UDP dan meneruskannya ke upstream, sambil menc
 
 1. Buka halaman **Aktivitas DNS**.
 2. Klik **Aktifkan DNS logger**.
-3. Server mendengarkan di **UDP 5354** dan meneruskan ke **8.8.8.8** (bisa diubah di `config.json`).
+3. Server mendengarkan di **UDP 5354** (bisa diubah ke `53` di `config.json` agar HP/router bisa memakainya) dan meneruskan ke **8.8.8.8**.
 4. Uji dari terminal:
 
 ```bat
@@ -302,11 +302,29 @@ dan domain `example.com` muncul di live feed.
 
 ### Agar perangkat lain memakai logger ini
 
-Arahkan DNS perangkat (atau DHCP router) ke **IP LAN komputer ini**, port **5354** jika didukung. Sayangnya banyak perangkat hanya mendukung DNS port 53. Untuk itu:
+Arahkan DNS perangkat (atau DHCP router) ke **IP LAN komputer ini**, port **5354** jika didukung. Sayangnya banyak perangkat (Android, iOS, router) hanya mendukung DNS port 53. Untuk itu:
 
-- Ubah `dns.port` menjadi `53` di `config.json` (di Windows, port <1024 tidak selalu butuh admin, tetapi bisa bentrok dengan aplikasi lain).
-- Pastikan Windows Firewall mengizinkan UDP 53/5354 untuk jaringan privat.
+- Ubah `dns.port` menjadi `53` di `config.json`, lalu jalankan ulang server.
+- Pastikan Windows Firewall mengizinkan **UDP 53 masuk**. Contoh, dibatasi ke satu subnet saja:
+
+  ```powershell
+  New-NetFirewallRule -DisplayName "NetWatch DNS (UDP 53)" `
+    -Direction Inbound -Protocol UDP -LocalPort 53 `
+    -RemoteAddress 192.168.1.0/24 -Action Allow -Profile Any
+  ```
+
+- Cek logger menjawab dari IP LAN: `node tools/dns-query.js example.com 53 192.168.1.10`
 - Jangan arahkan seluruh jaringan ke logger ini tanpa izin pemilik jaringan.
+
+**Mengarahkan perangkat:**
+
+| Perangkat | Caranya |
+|---|---|
+| Android | Setelan → Wi-Fi → jaringan → Ubah → IP: **Statis** → DNS 1 = IP komputer. Matikan **Private DNS**. |
+| Windows | Setelan → Jaringan → Wi-Fi → Penetapan server DNS → **Manual** → IPv4 = IP komputer. |
+| Router | Set DHCP/DNS server ke IP komputer → semua perangkat ikut otomatis. |
+
+Tunnel Cloudflare **tidak bisa** dipakai untuk DNS: tunnel hanya meneruskan HTTP/HTTPS, dan DNS harus satu jaringan lokal dengan komputer ini.
 
 ### Batasan penting
 
