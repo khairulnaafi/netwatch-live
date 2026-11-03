@@ -154,7 +154,8 @@ Browser **tidak bisa** memindai daftar Wi-Fi di sekitar pengunjung — tidak ada
 | Perangkat | Agent | Kebutuhan |
 |---|---|---|
 | Windows | `agent/agent.bat` | Tidak perlu install apa pun (memakai PowerShell bawaan) |
-| Android | `agent/termux.sh` | Termux + Termux:API dari F-Droid, izin lokasi, GPS menyala |
+| Android | APK `agent/netwatch.apk` | Pasang sekali, tempel kode dari `/join` — tanpa Termux |
+| Android (alternatif) | `agent/termux.sh` | Termux + Termux:API dari F-Droid, izin lokasi, GPS menyala |
 | Linux | `agent/agent.sh` | `nmcli` (NetworkManager) |
 | macOS | `agent/agent.sh` | `airport` (bisa tidak tersedia di Sonoma ke atas) |
 
@@ -165,7 +166,13 @@ Langkah singkat:
 3. Teman menjalankan agent dan mengisi nama lokasi (contoh `Laptop Budi`).
 4. Buka dashboard → **Wi-Fi & Klien** → pilih lokasi di dropdown **Lokasi dipantau**.
 
-Khusus Android, cukup satu perintah di Termux (script diunduh otomatis dari server):
+Khusus Android, ada dua cara:
+
+**1. Aplikasi NetWatch (disarankan).** Unduh `agent/netwatch.apk` dari halaman `/join`,
+pasang, tempel kode perangkat, tekan **Mulai memantau**. Tanpa Termux, tanpa root.
+Kode sumber dan cara build: [`android/README.md`](android/README.md).
+
+**2. Termux.** Satu perintah (script diunduh otomatis dari server):
 
 ```bash
 curl -sL https://xxxxx.trycloudflare.com/agent/setup.sh | bash -s -- \
