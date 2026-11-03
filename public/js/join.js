@@ -23,7 +23,15 @@
   }
 
   function safeName(text) {
-    return String(text || '').replace(/["`$\\]/g, '').trim().slice(0, 40);
+    return String(text || '').replace(/["`$\\|]/g, '').trim().slice(0, 40);
+  }
+
+  // base64url tanpa padding, isinya "https://server|KUNCI|Nama".
+  function b64url(text) {
+    var bytes = new TextEncoder().encode(text);
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
   /* ------------------------------------------------------------------ */
@@ -62,6 +70,9 @@
     $('#cmdAndroid').textContent = android;
     $('#cmdUnix').textContent = unix;
     $('#cfgWindows').textContent = winCfg;
+
+    var appCode = $('#appCode');
+    if (appCode) appCode.textContent = b64url(base + '|' + state.key + '|' + name);
   }
 
   /* ------------------------------------------------------------------ */

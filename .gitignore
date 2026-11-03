@@ -15,3 +15,11 @@ agent/agent-config.txt
 # Kunci perangkat hasil pendaftaran /join
 device-keys.json
 device-keys.json.tmp
+
+# Hasil build APK
+android/build/
+android/netwatch.jks
+agent/netwatch.apk.idsig
+
+# Keluaran server saat dijalankan lokal
+server.out

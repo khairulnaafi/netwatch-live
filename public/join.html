@@ -211,28 +211,47 @@
     </div>
 
     <div class="pane active" data-pane="android">
+      <p class="sub" style="margin:0 0 12px">
+        <b style="color:var(--text)">Cara 1 — Aplikasi NetWatch</b> (paling mudah, tanpa Termux)
+      </p>
       <ol class="steps">
-        <li>Pasang dua aplikasi dari <b>F-Droid</b> (bukan Play Store):<br />
-          <a class="btn btn-ghost" style="margin-top:6px" href="https://f-droid.org/packages/com.termux/" target="_blank" rel="noopener">Termux</a>
-          <a class="btn btn-ghost" style="margin-top:6px" href="https://f-droid.org/packages/com.termux.api/" target="_blank" rel="noopener">Termux:API</a>
+        <li>Unduh aplikasinya:
+          <div class="row" style="margin-top:6px">
+            <a class="btn btn-primary" href="/agent/netwatch.apk" download>Unduh aplikasi (APK)</a>
+          </div>
         </li>
-        <li>Buka <b>Termux</b>, tempel perintah ini, tekan Enter:
-          <pre id="cmdAndroid">memuat…</pre>
-          <button class="btn btn-ghost copy" data-copy="cmdAndroid">Salin perintah</button>
+        <li>Buka file yang terunduh. Kalau muncul peringatan, pilih
+          <b>Setelan</b> → izinkan <b>Instal dari sumber tidak dikenal</b> untuk browser Anda.</li>
+        <li>Salin kode ini, tempel di aplikasi, lalu tekan <b>Mulai memantau</b>:
+          <pre id="appCode">memuat…</pre>
+          <button class="btn btn-ghost copy" data-copy="appCode">Salin kode</button>
         </li>
-        <li>Kalau diminta izin, pilih <b>Allow</b> untuk Lokasi pada <b>Termux:API</b>,
-          dan nyalakan <b>GPS</b> di HP.</li>
-        <li>Biarkan Termux tetap terbuka. Data terkirim tiap 30 detik.</li>
+        <li>Izinkan <b>Lokasi</b> dan <b>Perangkat di sekitar</b> (Android 13+) saat diminta,
+          lalu nyalakan <b>GPS</b>.</li>
       </ol>
+
       <details class="help">
-        <summary>Error <code>CANNOT LINK EXECUTABLE "curl"</code>? Klik di sini</summary>
-        <p>Itu <code>curl</code> di Termux yang rusak (bukan situs ini). Perbaiki dengan:</p>
+        <summary>Cara 2 — Termux (kalau tidak mau memasang APK)</summary>
+        <ol class="steps" style="margin-top:10px">
+          <li>Pasang dua aplikasi dari <b>F-Droid</b> (bukan Play Store):<br />
+            <a class="btn btn-ghost" style="margin-top:6px" href="https://f-droid.org/packages/com.termux/" target="_blank" rel="noopener">Termux</a>
+            <a class="btn btn-ghost" style="margin-top:6px" href="https://f-droid.org/packages/com.termux.api/" target="_blank" rel="noopener">Termux:API</a>
+          </li>
+          <li>Buka <b>Termux</b>, tempel perintah ini, tekan Enter:
+            <pre id="cmdAndroid">memuat…</pre>
+            <button class="btn btn-ghost copy" data-copy="cmdAndroid">Salin perintah</button>
+          </li>
+          <li>Kalau diminta izin, pilih <b>Allow</b> untuk Lokasi pada <b>Termux:API</b>,
+            dan nyalakan <b>GPS</b> di HP.</li>
+          <li>Biarkan Termux tetap terbuka. Data terkirim tiap 30 detik.</li>
+        </ol>
+        <p style="margin-top:10px">Error <code>CANNOT LINK EXECUTABLE "curl"</code>? Itu curl Termux
+          yang rusak. Perbaiki dengan:</p>
         <pre>pkg update
 pkg upgrade -y
 pkg reinstall curl openssl
 curl -I https://example.com</pre>
-        <p>Kalau perintah terakhir menampilkan <code>HTTP/2 200</code>, curl sudah sehat.
-          Baru jalankan lagi perintah di langkah 2.</p>
+        <p>Kalau perintah terakhir menampilkan <code>HTTP/2 200</code>, curl sudah sehat.</p>
       </details>
     </div>
 

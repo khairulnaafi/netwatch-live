@@ -334,6 +334,15 @@ async function handleRequest(req, res) {
     return sendFile(res, path.join(ROOT, 'agent', 'netwatch-agent.zip'), 'application/zip', req);
   }
 
+  if (pathname === '/agent/netwatch.apk' && (req.method === 'GET' || req.method === 'HEAD')) {
+    return sendFile(
+      res,
+      path.join(ROOT, 'agent', 'netwatch.apk'),
+      'application/vnd.android.package-archive',
+      req
+    );
+  }
+
   if (pathname === '/api/agent/status' && req.method === 'GET') {
     const id = url.searchParams.get('id');
     const key = url.searchParams.get('key') || req.headers['x-agent-key'] || '';
