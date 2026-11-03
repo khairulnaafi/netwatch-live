@@ -745,6 +745,16 @@
     $('#dnsPortInline').textContent = snap.config.dns.port;
     $('#dnsUpstream').textContent = snap.config.dns.upstream;
     $('#dnsIpInline').textContent = snap.clients.localIp || 'IP-LAN';
+
+    const online = (act.stats && act.stats.onlineClients) || 0;
+    const totalClients = (act.stats && act.stats.uniqueClients) || 0;
+    const clientPill = $('#dnsClients');
+    if (clientPill) {
+      clientPill.className = `status-pill ${online > 0 ? 'up' : 'unknown'}`;
+      clientPill.textContent = totalClients
+        ? `${online} dari ${totalClients} klien online`
+        : 'belum ada klien';
+    }
     const toggle = $('#dnsToggleBtn');
     toggle.textContent = running ? 'Hentikan DNS Logger' : 'Aktifkan DNS Logger';
     toggle.className = `btn ${running ? 'btn-ghost' : 'btn-primary'}`;
@@ -778,10 +788,14 @@
       ? topClients
           .map((c, i) => {
             const width = Math.max(3, (c.count / Math.max(1, topClients[0].count)) * 100);
+            const online = c.online !== false;
+            const pill = `<span class="status-pill ${online ? 'up' : 'unknown'}">${online ? 'Online' : 'Offline'}</span>`;
+            const seen = c.lastSeen ? `<span class="time-cell" style="font-size:10px">${fmtAgo(c.lastSeen)}</span>` : '';
             return `<div class="rank-item"><span class="rank-num">${String(i + 1).padStart(2, '0')}</span>
               <div class="rank-main"><div class="rank-top"><span class="rank-domain">${esc(clientNameFor(c.ip))}</span><span class="rank-count">${nf.format(c.count)}×</span></div>
               <div class="rank-bar"><i style="width:${width}%"></i></div></div>
-              <span class="mono rank-count">${esc(c.ip)}</span></div>`;
+              <span style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">
+                <span class="mono rank-count">${esc(c.ip)}</span>${pill}${seen}</span></div>`;
           })
           .join('')
       : '<div class="empty-state small">Belum ada klien.</div>';
