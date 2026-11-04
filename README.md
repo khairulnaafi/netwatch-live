@@ -326,6 +326,31 @@ Arahkan DNS perangkat (atau DHCP router) ke **IP LAN komputer ini**, port **5354
 
 Tunnel Cloudflare **tidak bisa** dipakai untuk DNS: tunnel hanya meneruskan HTTP/HTTPS, dan DNS harus satu jaringan lokal dengan komputer ini.
 
+### Perkiraan aplikasi dari domain
+
+Setiap domain dipetakan ke aplikasi yang paling mungkin memakainya (`lib/apps.js`):
+`googlevideo.com` → YouTube, `tiktokcdn.com` → TikTok, `cdninstagram.com` → Instagram,
+dan seterusnya. Hasilnya muncul sebagai badge di **Live Feed** dan kartu **Aplikasi Teratas**.
+
+Ini tebakan, bukan deteksi aplikasi:
+
+- Aplikasi tanpa internet (galeri, game offline) tidak terlihat sama sekali.
+- Sinkronisasi latar belakang bisa muncul walau aplikasi tidak dibuka.
+- Domain umum (`google.com`, `facebook.com`) dipakai banyak aplikasi, jadi bisa salah tebak.
+- Kalau perangkat memakai Private DNS/DoH, domainnya tidak terlihat.
+
+### Hotspot dari PC (agar perangkat tamu terlihat)
+
+Perangkat yang menumpang hotspot **HP** tidak bisa dipantau: Android tidak memberi aplikasi
+akses ke trafik tethering. Yang bisa: jadikan **PC** sebagai hotspot, karena Windows
+menjadikan PC sebagai gateway sekaligus DNS untuk tamu.
+
+1. Setelan → Jaringan → **Hotspot seluler** → nyalakan (SSID contoh `PERSONAL 7815`).
+2. Sambungkan HP tamu ke hotspot itu, lalu **matikan Private DNS** di HP tersebut.
+3. Buka Aktivitas DNS → perangkat tamu muncul sebagai klien dengan domain + perkiraan aplikasi.
+
+Catatan: hotspot tetap harus diberi sandi, dan matikan bila tidak dipakai.
+
 ### Batasan penting
 
 - Hanya mencatat perangkat yang **memakai DNS logger ini**. Perangkat yang memakai DoH/DoT (Chrome, Firefox, aplikasi tertentu) tidak akan terlihat.

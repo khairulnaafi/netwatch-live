@@ -724,6 +724,13 @@
     return entry ? entry.clientName : ip;
   }
 
+  // Badge kecil di bawah nama domain: perkiraan aplikasi dari domainnya.
+  function appBadge(app) {
+    if (!app || !app.name) return '';
+    const color = /^#[0-9a-f]{6}$/i.test(app.color || '') ? app.color : '#94a3b8';
+    return `<br><span style="display:inline-block;margin-top:3px;padding:1px 7px;border-radius:6px;font-size:10px;font-weight:600;color:${color};background:${color}22">${esc(app.name)}</span>`;
+  }
+
   function renderActivity() {
     const { snap } = state;
     const act = snap.activity;
@@ -800,6 +807,22 @@
           .join('')
       : '<div class="empty-state small">Belum ada klien.</div>';
 
+    const topApps = stats.topApps || [];
+    const appsEl = $('#topApps');
+    if (appsEl) {
+      appsEl.innerHTML = topApps.length
+        ? topApps
+            .map((a, i) => {
+              const width = Math.max(3, (a.count / Math.max(1, topApps[0].count)) * 100);
+              const color = /^#[0-9a-f]{6}$/i.test(a.color || '') ? a.color : '#94a3b8';
+              return `<div class="rank-item"><span class="rank-num">${String(i + 1).padStart(2, '0')}</span>
+                <div class="rank-main"><div class="rank-top"><span class="rank-domain">${esc(a.name)}</span><span class="rank-count">${nf.format(a.count)}×</span></div>
+                <div class="rank-bar"><i style="width:${width}%;background:${color}"></i></div></div></div>`;
+            })
+            .join('')
+        : '<div class="empty-state small">Belum ada aplikasi yang dikenali.</div>';
+    }
+
     const entries = act.entries || [];
     $('#feedBadge').textContent = `${entries.length} entri`;
     $('#activityRows').innerHTML = entries
@@ -808,7 +831,7 @@
         (e) => `<tr>
           <td class="mono time-cell">${fmtTime(e.t)}</td>
           <td><strong>${esc(e.clientName || clientNameFor(e.clientIp))}</strong><br><span class="time-cell">${esc(e.clientIp)}</span></td>
-          <td class="mono">${esc(e.domain)}</td>
+          <td><span class="mono">${esc(e.domain)}</span>${appBadge(e.app)}</td>
           <td><span class="cat ${esc(e.category)}">${esc(e.category)}</span></td>
           <td class="mono">${esc(e.qtype || 'A')}</td>
         </tr>`
