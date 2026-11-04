@@ -351,6 +351,11 @@ menjadikan PC sebagai gateway sekaligus DNS untuk tamu.
 2. Sambungkan HP tamu ke hotspot itu, lalu **matikan Private DNS** di HP tersebut.
 3. Buka Aktivitas DNS → perangkat tamu muncul sebagai klien dengan domain + perkiraan aplikasi.
 
+Windows mematikan Mobile Hotspot sendiri bila dianggap idle atau saat koneksi internet
+berubah. Agar tetap hidup, jalankan `start-hotspot.bat` (atau
+`powershell -ExecutionPolicy Bypass -File tools\hotspot-watch.ps1`). Skrip itu mengecek
+tiap 30 detik dan menyalakan hotspot lagi bila mati.
+
 Catatan: hotspot tetap harus diberi sandi, dan matikan bila tidak dipakai.
 
 ### Batasan penting
