@@ -798,9 +798,17 @@
             const online = c.online !== false;
             const pill = `<span class="status-pill ${online ? 'up' : 'unknown'}">${online ? 'Online' : 'Offline'}</span>`;
             const seen = c.lastSeen ? `<span class="time-cell" style="font-size:10px">${fmtAgo(c.lastSeen)}</span>` : '';
+            const appChips = (c.apps || []).length
+              ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">${c.apps
+                  .map((a) => {
+                    const color = /^#[0-9a-f]{6}$/i.test(a.color || '') ? a.color : '#94a3b8';
+                    return `<span style="padding:1px 6px;border-radius:6px;font-size:10px;font-weight:600;color:${color};background:${color}22">${esc(a.name)} ${nf.format(a.count)}×</span>`;
+                  })
+                  .join('')}</div>`
+              : '<div class="time-cell" style="font-size:10px;margin-top:4px">belum ada aplikasi dikenali</div>';
             return `<div class="rank-item"><span class="rank-num">${String(i + 1).padStart(2, '0')}</span>
               <div class="rank-main"><div class="rank-top"><span class="rank-domain">${esc(clientNameFor(c.ip))}</span><span class="rank-count">${nf.format(c.count)}×</span></div>
-              <div class="rank-bar"><i style="width:${width}%"></i></div></div>
+              <div class="rank-bar"><i style="width:${width}%"></i></div>${appChips}</div>
               <span style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">
                 <span class="mono rank-count">${esc(c.ip)}</span>${pill}${seen}</span></div>`;
           })

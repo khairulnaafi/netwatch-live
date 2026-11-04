@@ -331,6 +331,8 @@ Tunnel Cloudflare **tidak bisa** dipakai untuk DNS: tunnel hanya meneruskan HTTP
 Setiap domain dipetakan ke aplikasi yang paling mungkin memakainya (`lib/apps.js`):
 `googlevideo.com` → YouTube, `tiktokcdn.com` → TikTok, `cdninstagram.com` → Instagram,
 dan seterusnya. Hasilnya muncul sebagai badge di **Live Feed** dan kartu **Aplikasi Teratas**.
+Kartu **Klien Paling Aktif** menampilkan rincian per perangkat: IP tamu, status online/offline,
+dan chip aplikasi yang paling sering ia akses.
 
 Ini tebakan, bukan deteksi aplikasi:
 
